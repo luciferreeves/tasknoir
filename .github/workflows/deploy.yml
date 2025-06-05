@@ -121,7 +121,7 @@ jobs:
         for i in {1..5}; do
           RESPONSE=$(curl -s "${DEPLOY_URL}/api/health" || echo "failed")
           
-          if echo "$RESPONSE" | grep -q '"status":"ok"'; then
+          if echo "$RESPONSE" | grep -q '"status":"OK"'; then
             echo "✅ Health check passed on attempt $i"
             echo "📋 Response: $RESPONSE"
             break
