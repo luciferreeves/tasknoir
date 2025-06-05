@@ -1,0 +1,754 @@
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { TRPCError } from "@trpc/server";
+import type { Prisma } from "@prisma/client";
+
+export const taskRouter = createTRPCRouter({
+  // Get all tasks for the current user
+  getAll: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().optional(),
+        status: z
+          .enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"])
+          .optional(),
+        priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+        assignedToMe: z.boolean().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: Prisma.TaskWhereInput = {
+        OR: [
+          {
+            project: {
+              ownerId: ctx.session.user.id,
+            },
+          },
+          {
+            project: {
+              members: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          },
+          {
+            assignments: {
+              some: {
+                userId: ctx.session.user.id,
+              },
+            },
+          },
+        ],
+      };
+
+      if (input.projectId) {
+        where.projectId = input.projectId;
+      }
+
+      if (input.status) {
+        where.status = input.status;
+      }
+
+      if (input.priority) {
+        where.priority = input.priority;
+      }
+
+      if (input.assignedToMe) {
+        where.assignments = {
+          some: {
+            userId: ctx.session.user.id,
+          },
+        };
+      }
+
+      const tasks = await ctx.db.task.findMany({
+        where,
+        include: {
+          project: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          assignments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          categories: true,
+          parentTask: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          _count: {
+            select: {
+              comments: true,
+              attachments: true,
+              subTasks: true,
+            },
+          },
+        },
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      });
+
+      return tasks;
+    }),
+
+  // Get a single task by ID
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const task = await ctx.db.task.findFirst({
+        where: {
+          id: input.id,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                  },
+                },
+              },
+            },
+            {
+              assignments: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          project: {
+            select: {
+              id: true,
+              title: true,
+              ownerId: true,
+            },
+          },
+          assignments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          categories: true,
+          parentTask: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          subTasks: {
+            include: {
+              assignments: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      image: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+          comments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          attachments: {
+            orderBy: {
+              uploadedAt: "desc", // Changed from createdAt to uploadedAt
+            },
+          },
+          activities: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          timeEntries: true, // Removed user include since it doesn't exist in schema
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found or you do not have access to it",
+        });
+      }
+
+      return task;
+    }),
+
+  // Create a new task
+  create: protectedProcedure
+    .input(
+      z.object({
+        title: z.string().min(1, "Task title is required"),
+        description: z.string().optional(),
+        projectId: z.string(),
+        parentTaskId: z.string().optional(),
+        categoryId: z.string().optional(),
+        priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
+        status: z
+          .enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"])
+          .default("TODO"),
+        dueDate: z.date().optional(),
+        estimatedHours: z.number().positive().optional(),
+        assigneeIds: z.array(z.string()).optional(),
+        tagIds: z.array(z.string()).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the project
+      const project = await ctx.db.project.findFirst({
+        where: {
+          id: input.projectId,
+          OR: [
+            { ownerId: ctx.session.user.id },
+            {
+              members: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found or you do not have access to it",
+        });
+      }
+
+      // If parentTaskId is provided, check if it exists and belongs to the same project
+      if (input.parentTaskId) {
+        const parentTask = await ctx.db.task.findFirst({
+          where: {
+            id: input.parentTaskId,
+            projectId: input.projectId,
+          },
+        });
+
+        if (!parentTask) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Parent task not found in this project",
+          });
+        }
+      }
+
+      const { assigneeIds, tagIds, ...taskData } = input;
+
+      const task = await ctx.db.task.create({
+        data: {
+          ...taskData,
+          userId: ctx.session.user.id, // Changed from createdById to userId per schema
+          assignments: assigneeIds
+            ? {
+                create: assigneeIds.map((userId) => ({
+                  userId,
+                  assignedAt: new Date(),
+                })),
+              }
+            : undefined,
+          tags: tagIds
+            ? {
+                create: tagIds.map((tagId) => ({
+                  tagId,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          project: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          assignments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          categories: true,
+        },
+      });
+
+      // Create activity log
+      await ctx.db.taskActivity.create({
+        data: {
+          taskId: task.id,
+          userId: ctx.session.user.id,
+          action: "CREATED",
+          description: `Task "${task.title}" was created`, // Changed from details to description
+        },
+      });
+
+      return task;
+    }),
+
+  // Update a task
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        title: z.string().min(1, "Task title is required").optional(),
+        description: z.string().optional(),
+        categoryId: z.string().optional(),
+        priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+        status: z
+          .enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"])
+          .optional(),
+        dueDate: z.date().optional(),
+        estimatedHours: z.number().positive().optional(),
+        actualHours: z.number().positive().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const existingTask = await ctx.db.task.findFirst({
+        where: {
+          id: input.id,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                  },
+                },
+              },
+            },
+            {
+              assignments: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!existingTask) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found or you do not have permission to update it",
+        });
+      }
+
+      const { id, ...updateData } = input;
+      const task = await ctx.db.task.update({
+        where: { id },
+        data: updateData,
+        include: {
+          project: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          assignments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                },
+              },
+            },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          categories: true,
+        },
+      });
+
+      // Create activity log for significant changes
+      if (input.status && input.status !== existingTask.status) {
+        await ctx.db.taskActivity.create({
+          data: {
+            taskId: task.id,
+            userId: ctx.session.user.id,
+            action: "STATUS_CHANGED",
+            description: `Status changed from ${existingTask.status} to ${input.status}`, // Changed from details to description
+          },
+        });
+      }
+
+      return task;
+    }),
+
+  // Delete a task
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const existingTask = await ctx.db.task.findFirst({
+        where: {
+          id: input.id,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                    // Removed role field as it doesn't exist in the ProjectMember model
+                  },
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!existingTask) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found or you do not have permission to delete it",
+        });
+      }
+
+      await ctx.db.task.delete({
+        where: { id: input.id },
+      });
+
+      return { success: true };
+    }),
+
+  // Assign users to a task
+  assignUsers: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        userIds: z.array(z.string()),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const task = await ctx.db.task.findFirst({
+        where: {
+          id: input.taskId,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                    // Removed role field as it doesn't exist in the ProjectMember model
+                  },
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message:
+            "Task not found or you do not have permission to assign users",
+        });
+      }
+
+      // Remove existing assignments
+      await ctx.db.taskAssignment.deleteMany({
+        where: { taskId: input.taskId },
+      });
+
+      // Create new assignments
+      if (input.userIds.length > 0) {
+        await ctx.db.taskAssignment.createMany({
+          data: input.userIds.map((userId) => ({
+            taskId: input.taskId,
+            userId,
+            assignedAt: new Date(),
+          })),
+        });
+      }
+
+      return { success: true };
+    }),
+
+  // Add a comment to a task
+  addComment: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        content: z.string().min(1, "Comment content is required"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const task = await ctx.db.task.findFirst({
+        where: {
+          id: input.taskId,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                  },
+                },
+              },
+            },
+            {
+              assignments: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found or you do not have access to it",
+        });
+      }
+
+      const comment = await ctx.db.taskComment.create({
+        data: {
+          taskId: input.taskId,
+          userId: ctx.session.user.id,
+          content: input.content,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      // Create activity log
+      await ctx.db.taskActivity.create({
+        data: {
+          taskId: input.taskId,
+          userId: ctx.session.user.id,
+          action: "COMMENTED",
+          description: "Added a comment", // Changed from details to description
+        },
+      });
+
+      return comment;
+    }),
+
+  // Start time tracking for a task
+  startTimeTracking: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        description: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const task = await ctx.db.task.findFirst({
+        where: {
+          id: input.taskId,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                  },
+                },
+              },
+            },
+            {
+              assignments: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found or you do not have access to it",
+        });
+      }
+
+      // Check if user already has an active time entry
+      const activeEntry = await ctx.db.taskTimeEntry.findFirst({
+        where: {
+          taskId: input.taskId,
+          endTime: null,
+        },
+      });
+
+      if (activeEntry) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "You already have an active time entry for this task",
+        });
+      }
+
+      const timeEntry = await ctx.db.taskTimeEntry.create({
+        data: {
+          taskId: input.taskId,
+          description: input.description,
+          startTime: new Date(),
+        },
+      });
+
+      return timeEntry;
+    }),
+
+  // Stop time tracking for a task
+  stopTimeTracking: protectedProcedure
+    .input(z.object({ taskId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const activeEntry = await ctx.db.taskTimeEntry.findFirst({
+        where: {
+          taskId: input.taskId,
+          endTime: null,
+        },
+      });
+
+      if (!activeEntry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No active time entry found for this task",
+        });
+      }
+
+      const endTime = new Date();
+      const durationMinutes = Math.floor(
+        (endTime.getTime() - activeEntry.startTime.getTime()) / (1000 * 60),
+      );
+
+      const timeEntry = await ctx.db.taskTimeEntry.update({
+        where: { id: activeEntry.id },
+        data: {
+          endTime,
+          duration: durationMinutes, // Changed from hours to duration in minutes
+        },
+      });
+
+      return timeEntry;
+    }),
+});
