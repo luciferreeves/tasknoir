@@ -37,9 +37,17 @@ jobs:
       
     - name: 🎨 Run ESLint
       run: npm run lint
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
       
     - name: 🏗️ TypeScript type check
       run: npx tsc --noEmit
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
       
     - name: 📋 Prisma validation
       run: npx prisma validate
