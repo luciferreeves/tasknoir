@@ -69,10 +69,10 @@ const EditTaskPage: NextPage = () => {
 
     if (!task) {
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-background">
                 <Navbar />
                 <div className="container mx-auto px-4 py-8">
-                    <div className="text-center text-gray-600">Task not found</div>
+                    <div className="text-center text-muted-foreground">Task not found</div>
                 </div>
             </div>
         );
@@ -97,7 +97,7 @@ const EditTaskPage: NextPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             <Navbar />
             <div className="container mx-auto px-4 py-8">
                 {/* Header */}
@@ -105,28 +105,28 @@ const EditTaskPage: NextPage = () => {
                     <div className="flex items-center space-x-4 mb-4">
                         <Link
                             href={`/tasks/${taskId}`}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            className="btn btn-ghost"
                         >
                             ← Back to Task
                         </Link>
                         <Link
                             href="/tasks"
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            className="btn btn-ghost"
                         >
                             All Tasks
                         </Link>
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900">Edit Task</h1>
-                    <p className="text-gray-600 mt-2">Update task details and track progress.</p>
+                    <h1 className="text-3xl font-bold text-foreground">Edit Task</h1>
+                    <p className="text-muted-foreground mt-2">Update task details and track progress.</p>
                 </div>
 
                 {/* Form */}
-                <div className="max-w-2xl">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div className="max-w-2xl mx-auto">
+                    <div className="card p-8">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Task Title */}
                             <div>
-                                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="title" className="label">
                                     Task Title *
                                 </label>
                                 <input
@@ -135,14 +135,14 @@ const EditTaskPage: NextPage = () => {
                                     required
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="input"
                                     placeholder="Enter task title"
                                 />
                             </div>
 
                             {/* Description */}
                             <div>
-                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="description" className="label">
                                     Description
                                 </label>
                                 <textarea
@@ -150,7 +150,7 @@ const EditTaskPage: NextPage = () => {
                                     rows={4}
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="textarea"
                                     placeholder="Describe the task requirements and details"
                                 />
                             </div>
@@ -158,14 +158,14 @@ const EditTaskPage: NextPage = () => {
                             {/* Priority and Status */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="priority" className="label">
                                         Priority
                                     </label>
                                     <select
                                         id="priority"
                                         value={formData.priority}
                                         onChange={(e) => setFormData({ ...formData, priority: e.target.value as typeof formData.priority })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="select"
                                     >
                                         <option value="LOW">Low</option>
                                         <option value="MEDIUM">Medium</option>
@@ -175,14 +175,14 @@ const EditTaskPage: NextPage = () => {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="status" className="label">
                                         Status
                                     </label>
                                     <select
                                         id="status"
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="select"
                                     >
                                         <option value="TODO">Todo</option>
                                         <option value="IN_PROGRESS">In Progress</option>
@@ -194,7 +194,7 @@ const EditTaskPage: NextPage = () => {
 
                             {/* Due Date */}
                             <div>
-                                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="dueDate" className="label">
                                     Due Date
                                 </label>
                                 <input
@@ -202,22 +202,22 @@ const EditTaskPage: NextPage = () => {
                                     id="dueDate"
                                     value={formData.dueDate}
                                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="input"
                                 />
                             </div>
 
                             {/* Submit Buttons */}
-                            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                            <div className="flex justify-end space-x-4 pt-6 border-t border-border">
                                 <Link
                                     href={`/tasks/${taskId}`}
-                                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                    className="btn btn-outline"
                                 >
                                     Cancel
                                 </Link>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !formData.title.trim()}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="btn btn-primary"
                                 >
                                     {isSubmitting ? "Saving..." : "Save Changes"}
                                 </button>
@@ -228,14 +228,14 @@ const EditTaskPage: NextPage = () => {
 
                 {/* Error Display */}
                 {updateTaskMutation.error && (
-                    <div className="mt-4 max-w-2xl">
-                        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="mt-6 max-w-2xl mx-auto">
+                        <div className="card bg-destructive/5 border-destructive/20 p-4">
                             <div className="flex">
                                 <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-red-800">
+                                    <h3 className="text-sm font-medium text-destructive">
                                         Error updating task
                                     </h3>
-                                    <div className="mt-2 text-sm text-red-700">
+                                    <div className="mt-2 text-sm text-destructive/80">
                                         <p>{updateTaskMutation.error.message}</p>
                                     </div>
                                 </div>

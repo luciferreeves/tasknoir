@@ -79,21 +79,21 @@ export default function Tasks() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "TODO": return "bg-gray-500 text-white";
-            case "IN_PROGRESS": return "bg-blue-500 text-white";
-            case "REVIEW": return "bg-yellow-500 text-black";
-            case "COMPLETED": return "bg-green-500 text-white";
-            default: return "bg-gray-500 text-white";
+            case "TODO": return "badge badge-secondary";
+            case "IN_PROGRESS": return "badge badge-primary";
+            case "REVIEW": return "badge badge-warning";
+            case "COMPLETED": return "badge badge-success";
+            default: return "badge badge-secondary";
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case "LOW": return "bg-green-100 text-green-800";
-            case "MEDIUM": return "bg-yellow-100 text-yellow-800";
-            case "HIGH": return "bg-orange-100 text-orange-800";
-            case "URGENT": return "bg-red-100 text-red-800";
-            default: return "bg-gray-100 text-gray-800";
+            case "LOW": return "badge badge-success";
+            case "MEDIUM": return "badge badge-warning";
+            case "HIGH": return "badge badge-danger";
+            case "URGENT": return "badge badge-destructive";
+            default: return "badge badge-secondary";
         }
     };
 
@@ -114,38 +114,38 @@ export default function Tasks() {
                 <meta name="description" content="Your tasks dashboard" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
-            <div className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c]">
+            <div className="min-h-screen bg-background">
                 <Navbar />
                 <main className="container mx-auto px-4 py-8">
                     <div className="mb-8 flex justify-between items-center">
                         <div>
-                            <h1 className="text-4xl font-bold text-white mb-2">
+                            <h1 className="text-4xl font-bold text-foreground mb-2">
                                 Tasks ✅
                             </h1>
-                            <p className="text-white/70 text-lg">
+                            <p className="text-muted-foreground text-lg">
                                 Manage and track all your tasks
                             </p>
                         </div>
                         <Link
                             href="/tasks/new"
-                            className="rounded-lg bg-[hsl(280,100%,70%)] px-6 py-3 text-white font-medium hover:bg-[hsl(280,100%,60%)] transition-colors"
+                            className="btn btn-primary"
                         >
                             ➕ New Task
                         </Link>
                     </div>
 
                     {/* Filters */}
-                    <div className="rounded-lg bg-white/10 p-4 backdrop-blur-sm border border-white/20 mb-6">
+                    <div className="card mb-6">
                         <div className="flex flex-wrap gap-4 items-center">
                             <div>
-                                <label className="text-white/70 text-sm block mb-1">Status</label>
+                                <label className="label">Status</label>
                                 <select
                                     value={filters.status ?? ""}
                                     onChange={(e) => setFilters(prev => ({
                                         ...prev,
                                         status: (e.target.value as TaskStatus) || undefined
                                     }))}
-                                    className="rounded bg-white/10 border border-white/20 text-white px-3 py-1 text-sm"
+                                    className="select"
                                     aria-label="Filter by status"
                                 >
                                     <option value="">All Status</option>
@@ -157,14 +157,14 @@ export default function Tasks() {
                             </div>
 
                             <div>
-                                <label className="text-white/70 text-sm block mb-1">Priority</label>
+                                <label className="label">Priority</label>
                                 <select
                                     value={filters.priority ?? ""}
                                     onChange={(e) => setFilters(prev => ({
                                         ...prev,
                                         priority: (e.target.value as TaskPriority) || undefined
                                     }))}
-                                    className="rounded bg-white/10 border border-white/20 text-white px-3 py-1 text-sm"
+                                    className="select"
                                     aria-label="Filter by priority"
                                 >
                                     <option value="">All Priorities</option>
@@ -186,14 +186,14 @@ export default function Tasks() {
                                     }))}
                                     className="rounded"
                                 />
-                                <label htmlFor="assignedToMe" className="text-white/70 text-sm">
+                                <label htmlFor="assignedToMe" className="label">
                                     Assigned to me
                                 </label>
                             </div>
 
                             <button
                                 onClick={() => setFilters({ status: undefined, priority: undefined, assignedToMe: false })}
-                                className="text-[hsl(280,100%,70%)] hover:text-[hsl(280,100%,60%)] text-sm underline"
+                                className="btn btn-ghost text-sm"
                             >
                                 Clear filters
                             </button>
@@ -201,10 +201,10 @@ export default function Tasks() {
                     </div>
 
                     {tasks && tasks.length === 0 ? (
-                        <div className="rounded-xl bg-white/10 p-8 backdrop-blur-sm text-center">
+                        <div className="card text-center p-8">
                             <div className="text-6xl mb-4">📋</div>
-                            <h2 className="text-2xl font-bold text-white mb-2">No tasks found</h2>
-                            <p className="text-white/70 mb-6">
+                            <h2 className="text-2xl font-bold text-foreground mb-2">No tasks found</h2>
+                            <p className="text-muted-foreground mb-6">
                                 {Object.values(filters).some(Boolean)
                                     ? "Try adjusting your filters or create a new task"
                                     : "Create your first task to get started"
@@ -212,7 +212,7 @@ export default function Tasks() {
                             </p>
                             <Link
                                 href="/tasks/new"
-                                className="inline-block rounded-lg bg-[hsl(280,100%,70%)] px-6 py-3 text-white font-medium hover:bg-[hsl(280,100%,60%)] transition-colors"
+                                className="btn btn-primary"
                             >
                                 Create Task
                             </Link>
@@ -221,25 +221,25 @@ export default function Tasks() {
                         <div className="space-y-4">
                             {tasks?.map((task) => (
                                 <Link key={task.id} href={`/tasks/${task.id}`}>
-                                    <div className="rounded-lg bg-white/10 p-6 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-colors cursor-pointer">
+                                    <div className="card hover-lift cursor-pointer">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="text-lg font-semibold text-white">
+                                                    <h3 className="text-lg font-semibold text-foreground">
                                                         {task.title}
                                                     </h3>
                                                     <div className="flex items-center gap-2">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                                                        <span className={getStatusColor(task.status)}>
                                                             {task.status.replace('_', ' ')}
                                                         </span>
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                                        <span className={getPriorityColor(task.priority)}>
                                                             {getPriorityIcon(task.priority)} {task.priority}
                                                         </span>
                                                     </div>
                                                 </div>
 
                                                 {task.description && (
-                                                    <p className="text-white/70 text-sm mb-3 line-clamp-2">
+                                                    <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
                                                         {task.description}
                                                     </p>
                                                 )}
@@ -247,7 +247,7 @@ export default function Tasks() {
                                         </div>
 
                                         <div className="flex justify-between items-center text-sm">
-                                            <div className="flex items-center gap-4 text-white/60">
+                                            <div className="flex items-center gap-4 text-muted-foreground">
                                                 {task.project && (
                                                     <span>📁 {task.project.title}</span>
                                                 )}
@@ -269,14 +269,14 @@ export default function Tasks() {
                                                 {task.assignments?.slice(0, 3).map((assignment) => (
                                                     <div
                                                         key={assignment.id}
-                                                        className="w-6 h-6 rounded-full bg-[hsl(280,100%,70%)] flex items-center justify-center text-white text-xs"
+                                                        className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs"
                                                         title={assignment.user.name}
                                                     >
                                                         {assignment.user.name.charAt(0).toUpperCase()}
                                                     </div>
                                                 ))}
                                                 {task.assignments && task.assignments.length > 3 && (
-                                                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white text-xs">
+                                                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
                                                         +{task.assignments.length - 3}
                                                     </div>
                                                 )}

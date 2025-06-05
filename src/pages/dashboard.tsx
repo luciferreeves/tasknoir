@@ -2,6 +2,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
 
@@ -32,66 +33,101 @@ export default function Dashboard() {
                 <meta name="description" content="Your task management dashboard" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
-            <div className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c]">
+            <div className="min-h-screen bg-background">
                 <Navbar />
                 <main className="container mx-auto px-4 py-8">
-                    <div className="rounded-xl bg-white/10 p-8 backdrop-blur-sm">
+                    <div className="card p-8">
                         <div className="mb-8">
-                            <h1 className="text-4xl font-bold text-white mb-2">
+                            <h1 className="text-4xl font-bold text-foreground mb-2">
                                 Welcome back, {session.user.name}! 👋
                             </h1>
-                            <p className="text-white/70 text-lg">
+                            <p className="text-muted-foreground text-lg">
                                 Ready to tackle your tasks today?
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {/* Tasks Overview Card */}
-                            <div className="rounded-lg bg-white/5 p-6 border border-white/10">
-                                <h3 className="text-xl font-semibold text-white mb-4">📋 Tasks Overview</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-white/70">Total Tasks</span>
-                                        <span className="text-2xl font-bold text-white">0</span>
+                            <div className="card p-6 hover-lift">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <span className="text-xl">📋</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-white/70">Completed</span>
-                                        <span className="text-xl font-semibold text-green-400">0</span>
+                                    <h3 className="text-xl font-semibold text-foreground">Tasks Overview</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                                        <span className="text-muted-foreground font-medium">Total Tasks</span>
+                                        <span className="text-2xl font-bold text-foreground">0</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-white/70">Pending</span>
-                                        <span className="text-xl font-semibold text-yellow-400">0</span>
+                                    <div className="flex justify-between items-center p-3 rounded-lg bg-success/5">
+                                        <span className="text-muted-foreground font-medium">Completed</span>
+                                        <span className="text-xl font-semibold text-green-600 dark:text-green-400">0</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-3 rounded-lg bg-warning/5">
+                                        <span className="text-muted-foreground font-medium">Pending</span>
+                                        <span className="text-xl font-semibold text-yellow-600 dark:text-yellow-400">0</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Quick Actions Card */}
-                            <div className="rounded-lg bg-white/5 p-6 border border-white/10">
-                                <h3 className="text-xl font-semibold text-white mb-4">⚡ Quick Actions</h3>
+                            <div className="card p-6 hover-lift">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <span className="text-xl">⚡</span>
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-foreground">Quick Actions</h3>
+                                </div>
                                 <div className="space-y-3">
-                                    <button className="w-full rounded-lg bg-[hsl(280,100%,70%)]/20 border border-[hsl(280,100%,70%)]/30 px-4 py-3 text-white hover:bg-[hsl(280,100%,70%)]/30 transition-colors">
-                                        ➕ Add New Task
-                                    </button>
-                                    <button className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-white hover:bg-white/20 transition-colors">
-                                        📊 View Analytics
-                                    </button>
-                                    <button className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-white hover:bg-white/20 transition-colors">
-                                        ⚙️ Settings
-                                    </button>
+                                    <Link href="/tasks/new" className="block">
+                                        <button className="w-full btn btn-primary justify-start gap-3">
+                                            <span className="text-lg">➕</span>
+                                            Add New Task
+                                        </button>
+                                    </Link>
+                                    <Link href="/projects/new" className="block">
+                                        <button className="w-full btn btn-outline justify-start gap-3">
+                                            <span className="text-lg">📁</span>
+                                            Create Project
+                                        </button>
+                                    </Link>
+                                    <Link href="/tasks" className="block">
+                                        <button className="w-full btn btn-outline justify-start gap-3">
+                                            <span className="text-lg">📊</span>
+                                            View All Tasks
+                                        </button>
+                                    </Link>
                                 </div>
                             </div>
 
                             {/* Profile Card */}
-                            <div className="rounded-lg bg-white/5 p-6 border border-white/10">
-                                <h3 className="text-xl font-semibold text-white mb-4">👤 Profile</h3>
-                                <div className="space-y-2">
-                                    <div className="text-white/80">
-                                        <span className="block text-sm text-white/60">Name:</span>
-                                        <span className="font-medium">{session.user.name}</span>
+                            <div className="card p-6 hover-lift">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <span className="text-xl">👤</span>
                                     </div>
-                                    <div className="text-white/80">
-                                        <span className="block text-sm text-white/60">Email:</span>
-                                        <span className="font-medium">{session.user.email}</span>
+                                    <h3 className="text-xl font-semibold text-foreground">Profile</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    {session.user?.image && (
+                                        <div className="flex justify-center">
+                                            <img
+                                                className="h-16 w-16 rounded-full border-2 border-border shadow-sm"
+                                                src={session.user.image}
+                                                alt="Profile"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="space-y-3">
+                                        <div className="p-3 rounded-lg bg-muted/30">
+                                            <span className="block text-sm text-muted-foreground font-medium mb-1">Name</span>
+                                            <span className="font-medium text-foreground">{session.user.name}</span>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-muted/30">
+                                            <span className="block text-sm text-muted-foreground font-medium mb-1">Email</span>
+                                            <span className="font-medium text-foreground text-sm">{session.user.email}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -99,12 +135,12 @@ export default function Dashboard() {
 
                         {/* Recent Activity */}
                         <div className="mt-8">
-                            <h2 className="text-2xl font-bold text-white mb-4">📈 Recent Activity</h2>
-                            <div className="rounded-lg bg-white/5 p-6 border border-white/10">
+                            <h2 className="text-2xl font-bold text-foreground mb-4">📈 Recent Activity</h2>
+                            <div className="card p-6">
                                 <div className="text-center py-8">
                                     <div className="text-4xl mb-2">🎯</div>
-                                    <p className="text-white/70">No activity yet</p>
-                                    <p className="text-sm text-white/50 mt-1">
+                                    <p className="text-muted-foreground">No activity yet</p>
+                                    <p className="text-sm text-muted-foreground mt-1">
                                         Start by creating your first task!
                                     </p>
                                 </div>

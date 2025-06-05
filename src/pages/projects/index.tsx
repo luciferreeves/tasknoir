@@ -47,36 +47,36 @@ export default function Projects() {
                 <meta name="description" content="Your projects dashboard" />
                 <link rel="icon" href="/favicon.ico" />
             </Head>
-            <div className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c]">
+            <div className="min-h-screen bg-background">
                 <Navbar />
                 <main className="container mx-auto px-4 py-8">
                     <div className="mb-8 flex justify-between items-center">
                         <div>
-                            <h1 className="text-4xl font-bold text-white mb-2">
+                            <h1 className="text-4xl font-bold text-foreground mb-2">
                                 Projects 📁
                             </h1>
-                            <p className="text-white/70 text-lg">
+                            <p className="text-muted-foreground text-lg">
                                 Manage your projects and collaborate with your team
                             </p>
                         </div>
                         <Link
                             href="/projects/new"
-                            className="rounded-lg bg-[hsl(280,100%,70%)] px-6 py-3 text-white font-medium hover:bg-[hsl(280,100%,60%)] transition-colors"
+                            className="btn btn-primary"
                         >
                             ➕ New Project
                         </Link>
                     </div>
 
                     {projects && projects.length === 0 ? (
-                        <div className="rounded-xl bg-white/10 p-8 backdrop-blur-sm text-center">
+                        <div className="card text-center p-8">
                             <div className="text-6xl mb-4">📂</div>
-                            <h2 className="text-2xl font-bold text-white mb-2">No projects yet</h2>
-                            <p className="text-white/70 mb-6">
+                            <h2 className="text-2xl font-bold text-foreground mb-2">No projects yet</h2>
+                            <p className="text-muted-foreground mb-6">
                                 Create your first project to start organizing your tasks
                             </p>
                             <Link
                                 href="/projects/new"
-                                className="inline-block rounded-lg bg-[hsl(280,100%,70%)] px-6 py-3 text-white font-medium hover:bg-[hsl(280,100%,60%)] transition-colors"
+                                className="btn btn-primary"
                             >
                                 Create Project
                             </Link>
@@ -90,23 +90,23 @@ export default function Projects() {
 
                                 return (
                                     <Link key={project.id} href={`/projects/${project.id}`}>
-                                        <div className="rounded-lg bg-white/10 p-6 backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-colors cursor-pointer">
+                                        <div className="card hover-lift cursor-pointer p-2">
                                             <div className="flex justify-between items-start mb-4">
-                                                <h3 className="text-xl font-semibold text-white truncate">
+                                                <h3 className="text-xl font-semibold text-foreground truncate pr-4">
                                                     {project.title}
                                                 </h3>
-                                                <div className="flex flex-wrap gap-1">
+                                                <div className="flex flex-wrap gap-2">
                                                     {project.members.slice(0, 3).map((member) => (
                                                         <div
                                                             key={member.id}
-                                                            className="w-8 h-8 rounded-full bg-[hsl(280,100%,70%)] flex items-center justify-center text-white text-xs font-medium"
+                                                            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium"
                                                             title={member.user.name}
                                                         >
                                                             {member.user.name.charAt(0).toUpperCase()}
                                                         </div>
                                                     ))}
                                                     {project.members.length > 3 && (
-                                                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs">
+                                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
                                                             +{project.members.length - 3}
                                                         </div>
                                                     )}
@@ -114,34 +114,34 @@ export default function Projects() {
                                             </div>
 
                                             {project.description && (
-                                                <p className="text-white/70 text-sm mb-4 line-clamp-2">
+                                                <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                                                     {project.description}
                                                 </p>
                                             )}
 
                                             <div className="space-y-3">
                                                 <div>
-                                                    <div className="flex justify-between text-sm text-white/70 mb-1">
+                                                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
                                                         <span>Progress</span>
                                                         <span>{progress}%</span>
                                                     </div>
-                                                    <div className="w-full bg-white/20 rounded-full h-2">
+                                                    <div className="w-full bg-muted rounded-full h-2">
                                                         <div
-                                                            className={`bg-gradient-to-r from-[hsl(280,100%,70%)] to-[hsl(300,100%,80%)] h-2 rounded-full transition-all ${progress === 0 ? 'w-0' :
-                                                                    progress <= 25 ? 'w-1/4' :
-                                                                        progress <= 50 ? 'w-1/2' :
-                                                                            progress <= 75 ? 'w-3/4' :
-                                                                                'w-full'
+                                                            className={`bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all ${progress === 0 ? 'w-0' :
+                                                                progress <= 25 ? 'w-1/4' :
+                                                                    progress <= 50 ? 'w-1/2' :
+                                                                        progress <= 75 ? 'w-3/4' :
+                                                                            'w-full'
                                                                 }`}
                                                         ></div>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex justify-between text-sm">
-                                                    <span className="text-white/70">
+                                                    <span className="text-muted-foreground">
                                                         {totalTasks} tasks
                                                     </span>
-                                                    <span className="text-green-400">
+                                                    <span className="text-success">
                                                         {completedTasks} completed
                                                     </span>
                                                 </div>

@@ -61,15 +61,15 @@ const EditProjectPage: NextPage = () => {
 
     if (isError || !project) {
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-background">
                 <Navbar />
                 <div className="container mx-auto px-4 py-8">
                     <div className="text-center">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h1>
-                        <p className="text-gray-600 mb-6">The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to edit it.</p>
+                        <h1 className="text-2xl font-bold text-foreground mb-4">Project Not Found</h1>
+                        <p className="text-muted-foreground mb-6">The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to edit it.</p>
                         <Link
                             href="/projects"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            className="btn btn-primary"
                         >
                             Back to Projects
                         </Link>
@@ -96,7 +96,7 @@ const EditProjectPage: NextPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             <Navbar />
             <div className="container mx-auto px-4 py-8">
                 {/* Header */}
@@ -104,22 +104,22 @@ const EditProjectPage: NextPage = () => {
                     <div className="flex items-center space-x-4 mb-4">
                         <Link
                             href={`/projects/${projectId}`}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            className="btn btn-ghost"
                         >
                             ← Back to Project
                         </Link>
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900">Edit Project</h1>
-                    <p className="text-gray-600 mt-2">Update your project information and settings.</p>
+                    <h1 className="text-3xl font-bold text-foreground">Edit Project</h1>
+                    <p className="text-muted-foreground mt-2">Update your project information and settings.</p>
                 </div>
 
                 {/* Form */}
-                <div className="max-w-2xl">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div className="max-w-2xl mx-auto">
+                    <div className="card p-8">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Project Name */}
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="name" className="label">
                                     Project Name *
                                 </label>
                                 <input
@@ -128,14 +128,14 @@ const EditProjectPage: NextPage = () => {
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="input"
                                     placeholder="Enter project name"
                                 />
                             </div>
 
                             {/* Description */}
                             <div>
-                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="description" className="label">
                                     Description
                                 </label>
                                 <textarea
@@ -143,14 +143,14 @@ const EditProjectPage: NextPage = () => {
                                     rows={4}
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="textarea"
                                     placeholder="Describe your project goals and objectives"
                                 />
                             </div>
 
                             {/* Timeline */}
                             <div>
-                                <label htmlFor="timeline" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="timeline" className="label">
                                     Timeline
                                 </label>
                                 <input
@@ -158,23 +158,23 @@ const EditProjectPage: NextPage = () => {
                                     id="timeline"
                                     value={formData.timeline}
                                     onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="input"
                                     placeholder="e.g., Q1 2024, 3 months, Jan-Mar"
                                 />
                             </div>
 
                             {/* Submit Buttons */}
-                            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                            <div className="flex justify-end space-x-4 pt-6 border-t border-border">
                                 <Link
                                     href={`/projects/${projectId}`}
-                                    className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                                    className="btn btn-outline"
                                 >
                                     Cancel
                                 </Link>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting || !formData.name.trim()}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="btn btn-primary"
                                 >
                                     {isSubmitting ? "Updating..." : "Update Project"}
                                 </button>
@@ -185,14 +185,14 @@ const EditProjectPage: NextPage = () => {
 
                 {/* Error Display */}
                 {updateProjectMutation.error && (
-                    <div className="mt-4 max-w-2xl">
-                        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="mt-6 max-w-2xl mx-auto">
+                        <div className="card bg-destructive/5 border-destructive/20 p-4">
                             <div className="flex">
                                 <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-red-800">
+                                    <h3 className="text-sm font-medium text-destructive">
                                         Error updating project
                                     </h3>
-                                    <div className="mt-2 text-sm text-red-700">
+                                    <div className="mt-2 text-sm text-destructive/80">
                                         <p>{updateProjectMutation.error.message}</p>
                                     </div>
                                 </div>

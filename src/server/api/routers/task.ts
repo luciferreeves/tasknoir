@@ -255,7 +255,6 @@ export const taskRouter = createTRPCRouter({
           .enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"])
           .default("TODO"),
         dueDate: z.date().optional(),
-        estimatedHours: z.number().positive().optional(),
         assigneeIds: z.array(z.string()).optional(),
         tagIds: z.array(z.string()).optional(),
       }),
@@ -302,12 +301,18 @@ export const taskRouter = createTRPCRouter({
         }
       }
 
-      const { assigneeIds, tagIds, ...taskData } = input;
+      const { assigneeIds, tagIds, categoryId, ...taskData } = input;
 
       const task = await ctx.db.task.create({
         data: {
-          ...taskData,
-          userId: ctx.session.user.id, // Changed from createdById to userId per schema
+          title: taskData.title,
+          description: taskData.description,
+          projectId: taskData.projectId,
+          parentTaskId: taskData.parentTaskId,
+          priority: taskData.priority,
+          status: taskData.status,
+          dueDate: taskData.dueDate,
+          userId: ctx.session.user.id,
           assignments: assigneeIds
             ? {
                 create: assigneeIds.map((userId) => ({
@@ -321,6 +326,13 @@ export const taskRouter = createTRPCRouter({
                 create: tagIds.map((tagId) => ({
                   tagId,
                 })),
+              }
+            : undefined,
+          categories: categoryId
+            ? {
+                create: {
+                  categoryId,
+                },
               }
             : undefined,
         },
@@ -372,14 +384,11 @@ export const taskRouter = createTRPCRouter({
         id: z.string(),
         title: z.string().min(1, "Task title is required").optional(),
         description: z.string().optional(),
-        categoryId: z.string().optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
         status: z
           .enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"])
           .optional(),
         dueDate: z.date().optional(),
-        estimatedHours: z.number().positive().optional(),
-        actualHours: z.number().positive().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

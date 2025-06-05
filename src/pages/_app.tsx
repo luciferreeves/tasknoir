@@ -4,6 +4,7 @@ import { type AppType } from "next/app";
 import { Geist } from "next/font/google";
 
 import { api } from "~/utils/api";
+import { ThemeProvider } from "~/components/ThemeProvider";
 
 import "~/styles/globals.css";
 
@@ -17,9 +18,16 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
-      <div className={geist.className}>
-        <Component {...pageProps} />
-      </div>
+      <ThemeProvider
+        attribute="data-theme"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <div className={geist.className}>
+          <Component {...pageProps} />
+        </div>
+      </ThemeProvider>
     </SessionProvider>
   );
 };

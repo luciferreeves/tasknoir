@@ -108,26 +108,26 @@ const ProjectDetailPage: NextPage = () => {
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case "URGENT": return "bg-red-100 text-red-800";
-            case "HIGH": return "bg-orange-100 text-orange-800";
-            case "MEDIUM": return "bg-yellow-100 text-yellow-800";
-            case "LOW": return "bg-green-100 text-green-800";
-            default: return "bg-gray-100 text-gray-800";
+            case "URGENT": return "badge badge-destructive";
+            case "HIGH": return "badge badge-danger";
+            case "MEDIUM": return "badge badge-warning";
+            case "LOW": return "badge badge-success";
+            default: return "badge badge-secondary";
         }
     };
 
     const getTaskStatusColor = (status: string) => {
         switch (status) {
-            case "TODO": return "bg-gray-100 text-gray-800";
-            case "IN_PROGRESS": return "bg-blue-100 text-blue-800";
-            case "REVIEW": return "bg-yellow-100 text-yellow-800";
-            case "COMPLETED": return "bg-green-100 text-green-800";
-            default: return "bg-gray-100 text-gray-800";
+            case "TODO": return "badge badge-secondary";
+            case "IN_PROGRESS": return "badge badge-primary";
+            case "REVIEW": return "badge badge-warning";
+            case "COMPLETED": return "badge badge-success";
+            default: return "badge badge-secondary";
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             <Navbar />
             <div className="container mx-auto px-4 py-8">
                 {/* Header */}
@@ -136,7 +136,7 @@ const ProjectDetailPage: NextPage = () => {
                         <div className="flex items-center space-x-4">
                             <Link
                                 href="/projects"
-                                className="text-blue-600 hover:text-blue-800 font-medium"
+                                className="btn btn-ghost"
                             >
                                 ← Back to Projects
                             </Link>
@@ -144,27 +144,27 @@ const ProjectDetailPage: NextPage = () => {
                         <div className="flex space-x-2">
                             <Link
                                 href={`/tasks/new?projectId=${project.id}`}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                className="btn btn-primary"
                             >
                                 Add Task
                             </Link>
                             <Link
                                 href={`/projects/${project.id}/edit`}
-                                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                className="btn btn-secondary"
                             >
                                 Edit Project
                             </Link>
                         </div>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.title}</h1>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">{project.title}</h1>
                     {project.description && (
-                        <p className="text-gray-600 mb-4">{project.description}</p>
+                        <p className="text-muted-foreground mb-4">{project.description}</p>
                     )}
 
                     <div className="flex items-center space-x-4 mb-4">
                         {project.timeline && (
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-muted-foreground">
                                 Timeline: {project.timeline}
                             </span>
                         )}
@@ -173,18 +173,18 @@ const ProjectDetailPage: NextPage = () => {
                     {/* Progress Bar */}
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-gray-700">Progress</span>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm font-medium text-foreground">Progress</span>
+                            <span className="text-sm text-muted-foreground">
                                 {completedTasks}/{totalTasks} tasks completed
                             </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div className="w-full bg-muted rounded-full h-3">
                             <div
-                                className={`bg-blue-600 h-3 rounded-full transition-all duration-300 ${progressPercentage === 0 ? 'w-0' :
-                                        progressPercentage <= 25 ? 'w-1/4' :
-                                            progressPercentage <= 50 ? 'w-1/2' :
-                                                progressPercentage <= 75 ? 'w-3/4' :
-                                                    'w-full'
+                                className={`bg-primary h-3 rounded-full transition-all duration-300 ${progressPercentage === 0 ? 'w-0' :
+                                    progressPercentage <= 25 ? 'w-1/4' :
+                                        progressPercentage <= 50 ? 'w-1/2' :
+                                            progressPercentage <= 75 ? 'w-3/4' :
+                                                'w-full'
                                     }`}
                             ></div>
                         </div>
@@ -196,35 +196,35 @@ const ProjectDetailPage: NextPage = () => {
                     {/* Main Content */}
                     <div className="lg:col-span-2">
                         {/* Tasks Section */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                            <div className="p-6 border-b border-gray-200">
-                                <h2 className="text-xl font-semibold text-gray-900">Tasks</h2>
+                        <div className="card mb-8">
+                            <div className="p-6 border-b border-border">
+                                <h2 className="text-xl font-semibold text-foreground">Tasks</h2>
                             </div>
                             <div className="p-6">
                                 {projectTasks && projectTasks.length > 0 ? (
                                     <div className="space-y-4">
                                         {projectTasks.map((task) => (
-                                            <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                            <div key={task.id} className="card border hover-lift transition-all">
                                                 <div className="flex items-start justify-between mb-2">
                                                     <Link
                                                         href={`/tasks/${task.id}`}
-                                                        className="text-lg font-medium text-gray-900 hover:text-blue-600"
+                                                        className="text-lg font-medium text-foreground hover:text-primary"
                                                     >
                                                         {task.title}
                                                     </Link>
                                                     <div className="flex space-x-2">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskStatusColor(task.status)}`}>
+                                                        <span className={getTaskStatusColor(task.status)}>
                                                             {task.status.replace('_', ' ')}
                                                         </span>
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                                                        <span className={getPriorityColor(task.priority)}>
                                                             {task.priority}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 {task.description && (
-                                                    <p className="text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+                                                    <p className="text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
                                                 )}
-                                                <div className="flex items-center justify-between text-sm text-gray-500">
+                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
                                                     <div className="flex items-center space-x-4">
                                                         {task.assignments && task.assignments.length > 0 && (
                                                             <span>Assigned to: {task.assignments[0]?.user.name ?? task.assignments[0]?.user.email}</span>
@@ -240,10 +240,10 @@ const ProjectDetailPage: NextPage = () => {
                                     </div>
                                 ) : (
                                     <div className="text-center py-8">
-                                        <p className="text-gray-500 mb-4">No tasks yet</p>
+                                        <p className="text-muted-foreground mb-4">No tasks yet</p>
                                         <Link
                                             href={`/tasks/new?projectId=${project.id}`}
-                                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                            className="btn btn-primary"
                                         >
                                             Create First Task
                                         </Link>
@@ -259,40 +259,40 @@ const ProjectDetailPage: NextPage = () => {
                     {/* Sidebar */}
                     <div className="space-y-6">
                         {/* Project Info */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-900">Project Info</h3>
+                        <div className="card">
+                            <div className="p-6 border-b border-border">
+                                <h3 className="text-lg font-semibold text-foreground">Project Info</h3>
                             </div>
                             <div className="p-6 space-y-4">
                                 <div>
-                                    <span className="text-sm font-medium text-gray-700">Owner</span>
-                                    <p className="text-gray-900">{project.owner.name ?? project.owner.email}</p>
+                                    <span className="text-sm font-medium text-muted-foreground">Owner</span>
+                                    <p className="text-foreground">{project.owner.name ?? project.owner.email}</p>
                                 </div>
                                 <div>
-                                    <span className="text-sm font-medium text-gray-700">Created</span>
-                                    <p className="text-gray-900">{new Date(project.createdAt).toLocaleDateString()}</p>
+                                    <span className="text-sm font-medium text-muted-foreground">Created</span>
+                                    <p className="text-foreground">{new Date(project.createdAt).toLocaleDateString()}</p>
                                 </div>
                                 <div>
-                                    <span className="text-sm font-medium text-gray-700">Last Updated</span>
-                                    <p className="text-gray-900">{new Date(project.updatedAt).toLocaleDateString()}</p>
+                                    <span className="text-sm font-medium text-muted-foreground">Last Updated</span>
+                                    <p className="text-foreground">{new Date(project.updatedAt).toLocaleDateString()}</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Team Members */}
                         {project.members && project.members.length > 0 && (
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                                <div className="p-6 border-b border-gray-200">
-                                    <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
+                            <div className="card">
+                                <div className="p-6 border-b border-border">
+                                    <h3 className="text-lg font-semibold text-foreground">Team Members</h3>
                                 </div>
                                 <div className="p-6">
                                     <div className="space-y-3">
                                         {project.members.map((member) => (
                                             <div key={member.id} className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium">
                                                     {(member.user.name ?? member.user.email).charAt(0).toUpperCase()}
                                                 </div>
-                                                <span className="text-gray-900">{member.user.name ?? member.user.email}</span>
+                                                <span className="text-foreground">{member.user.name ?? member.user.email}</span>
                                             </div>
                                         ))}
                                     </div>

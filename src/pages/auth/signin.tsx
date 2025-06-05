@@ -124,7 +124,7 @@ export default function SignIn() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="group relative flex w-full justify-center rounded-lg bg-[hsl(280,100%,70%)] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[hsl(280,100%,60%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(280,100%,70%)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="btn btn-primary w-full"
                             >
                                 {loading ? "Signing in..." : "Sign in"}
                             </button>
