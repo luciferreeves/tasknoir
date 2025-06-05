@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 import { db } from "~/server/db";
+import { env } from "~/env";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -50,6 +51,27 @@ declare module "next-auth/jwt" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
+  secret: env.AUTH_SECRET,
+  debug: true, // Enable debug for production to see logs
+  pages: {
+    signIn: "/auth/signin",
+    error: "/auth/signin", // Redirect errors to signin page
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === "production" ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -59,6 +81,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log("Missing credentials");
           return null;
         }
 
@@ -68,37 +91,41 @@ export const authOptions: NextAuthOptions = {
         });
 
         try {
+          console.log("Auth attempt for email:", credentials.email);
           const { email, password } = loginSchema.parse(credentials);
 
           const user = await db.user.findUnique({
             where: { email },
           });
+          console.log("User lookup complete for:", email);
 
-          if (!user?.password || !user.name || !user.email) {
+          if (!user?.password) {
+            console.log("User not found or no password");
             return null;
           }
 
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const isPasswordValid = await bcrypt.compare(password, user.password);
+          console.log("Password validation result:", isPasswordValid);
 
           if (!isPasswordValid) {
+            console.log("Invalid password");
             return null;
           }
 
+          console.log("Authentication successful for user:", user.id);
           return {
             id: user.id,
-            email: user.email,
+            email: user.email ?? "",
             name: user.name,
           };
-        } catch {
+        } catch (error) {
+          console.error("Auth error:", error);
           return null;
         }
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
   callbacks: {
     jwt: ({ token, user }) => {
       if (user) {

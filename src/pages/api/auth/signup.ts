@@ -18,12 +18,15 @@ export default async function handler(
   }
 
   try {
+    console.log("Signup attempt started");
     const { name, email, password } = signupSchema.parse(req.body);
+    console.log("Signup data validated for email:", email);
 
     // Check if user already exists
     const existingUser = await db.user.findUnique({
       where: { email },
     });
+    console.log("Existing user check complete");
 
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -31,6 +34,7 @@ export default async function handler(
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
+    console.log("Password hashed successfully");
 
     // Create user
     const user = await db.user.create({
@@ -40,12 +44,14 @@ export default async function handler(
         password: hashedPassword,
       },
     });
+    console.log("User created successfully:", user.id);
 
     // Return user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user;
     res.status(201).json({ user: userWithoutPassword });
   } catch (error) {
+    console.error("Signup error details:", error);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: error.errors[0]?.message });
     }
