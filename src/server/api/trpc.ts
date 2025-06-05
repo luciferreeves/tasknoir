@@ -13,7 +13,7 @@ import { type Session } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "~/server/auth";
+import { getServerAuthSession } from "~/server/auth/config";
 import { db } from "~/server/db";
 
 /**
@@ -55,9 +55,11 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
   const { req, res } = opts;
 
   // Get the session from the server using the getServerSession wrapper function
-  const session = await auth(req, res);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const session = await getServerAuthSession({ req, res });
 
   return createInnerTRPCContext({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     session,
   });
 };
