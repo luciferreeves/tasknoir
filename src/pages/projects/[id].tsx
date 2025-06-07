@@ -271,21 +271,21 @@ const ProjectDetailPage: NextPage = () => {
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case "URGENT": return "badge badge-destructive";
-            case "HIGH": return "badge badge-danger";
-            case "MEDIUM": return "badge badge-warning";
-            case "LOW": return "badge badge-success";
-            default: return "badge badge-secondary";
+            case "URGENT": return "priority-urgent";
+            case "HIGH": return "priority-high";
+            case "MEDIUM": return "priority-medium";
+            case "LOW": return "priority-low";
+            default: return "priority-medium";
         }
     };
 
     const getTaskStatusColor = (status: string) => {
         switch (status) {
-            case "TODO": return "badge badge-secondary";
-            case "IN_PROGRESS": return "badge badge-primary";
-            case "REVIEW": return "badge badge-warning";
-            case "COMPLETED": return "badge badge-success";
-            default: return "badge badge-secondary";
+            case "TODO": return "status-todo";
+            case "IN_PROGRESS": return "status-in-progress";
+            case "REVIEW": return "status-review";
+            case "COMPLETED": return "status-completed";
+            default: return "status-todo";
         }
     };
 

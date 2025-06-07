@@ -79,31 +79,21 @@ export default function Tasks() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "TODO": return "badge badge-secondary";
-            case "IN_PROGRESS": return "badge badge-primary";
-            case "REVIEW": return "badge badge-warning";
-            case "COMPLETED": return "badge badge-success";
-            default: return "badge badge-secondary";
+            case "TODO": return "status-todo";
+            case "IN_PROGRESS": return "status-in-progress";
+            case "REVIEW": return "status-review";
+            case "COMPLETED": return "status-completed";
+            default: return "status-todo";
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case "LOW": return "badge badge-success";
-            case "MEDIUM": return "badge badge-warning";
-            case "HIGH": return "badge badge-danger";
-            case "URGENT": return "badge badge-destructive";
-            default: return "badge badge-secondary";
-        }
-    };
-
-    const getPriorityIcon = (priority: string) => {
-        switch (priority) {
-            case "LOW": return "⬇️";
-            case "MEDIUM": return "➡️";
-            case "HIGH": return "⬆️";
-            case "URGENT": return "🔥";
-            default: return "➡️";
+            case "LOW": return "priority-low";
+            case "MEDIUM": return "priority-medium";
+            case "HIGH": return "priority-high";
+            case "URGENT": return "priority-urgent";
+            default: return "priority-medium";
         }
     };
 
@@ -135,7 +125,7 @@ export default function Tasks() {
                     </div>
 
                     {/* Filters */}
-                    <div className="card p-6 mb-6">
+                    <div className="card p-4 mb-6">
                         <div className="flex gap-6 items-center overflow-x-auto">
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <label className="label text-sm font-medium whitespace-nowrap">Status:</label>
@@ -201,7 +191,7 @@ export default function Tasks() {
                     </div>
 
                     {tasks && tasks.length === 0 ? (
-                        <div className="card text-center p-8">
+                        <div className="card text-center p-6">
                             <div className="text-6xl mb-4">📋</div>
                             <h2 className="text-2xl font-bold text-foreground mb-2">No tasks found</h2>
                             <p className="text-muted-foreground mb-6">
@@ -218,66 +208,68 @@ export default function Tasks() {
                             </Link>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-8">
                             {tasks?.map((task) => (
-                                <Link key={task.id} href={`/tasks/${task.id}`}>
-                                    <div className="card p-6 hover-lift cursor-pointer">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="text-lg font-semibold text-foreground">
-                                                        {task.title}
-                                                    </h3>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={getStatusColor(task.status)}>
-                                                            {task.status.replace('_', ' ')}
-                                                        </span>
-                                                        <span className={getPriorityColor(task.priority)}>
-                                                            {getPriorityIcon(task.priority)} {task.priority}
-                                                        </span>
+                                <div key={task.id} className="mb-4 last:mb-0">
+                                    <Link href={`/tasks/${task.id}`}>
+                                        <div className="card p-6 hover-lift cursor-pointer">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="text-lg font-semibold text-foreground">
+                                                            {task.title}
+                                                        </h3>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={getStatusColor(task.status)}>
+                                                                {task.status.replace('_', ' ')}
+                                                            </span>
+                                                            <span className={getPriorityColor(task.priority)}>
+                                                                {task.priority}
+                                                            </span>
+                                                        </div>
                                                     </div>
+
+                                                    {task.description && (
+                                                        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                                                            {task.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-center text-sm">
+                                                <div className="flex items-center gap-4 text-muted-foreground">
+                                                    {task.project && (
+                                                        <span>📁 {task.project.title}</span>
+                                                    )}
+                                                    {task.dueDate && (
+                                                        <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
+                                                    )}
+                                                    <span>💬 {task._count?.comments ?? 0}</span>
+                                                    <span>📎 {task._count?.attachments ?? 0}</span>
+                                                    <span>🔗 {task._count?.subTasks ?? 0} subtasks</span>
                                                 </div>
 
-                                                {task.description && (
-                                                    <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                                                        {task.description}
-                                                    </p>
-                                                )}
+                                                <div className="flex gap-1">
+                                                    {task.assignments?.slice(0, 3).map((assignment) => (
+                                                        <div
+                                                            key={assignment.id}
+                                                            className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs"
+                                                            title={assignment.user.name}
+                                                        >
+                                                            {assignment.user.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    ))}
+                                                    {task.assignments && task.assignments.length > 3 && (
+                                                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                                            +{task.assignments.length - 3}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <div className="flex justify-between items-center text-sm">
-                                            <div className="flex items-center gap-4 text-muted-foreground">
-                                                {task.project && (
-                                                    <span>📁 {task.project.title}</span>
-                                                )}
-                                                {task.dueDate && (
-                                                    <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
-                                                )}
-                                                <span>💬 {task._count?.comments ?? 0}</span>
-                                                <span>📎 {task._count?.attachments ?? 0}</span>
-                                                <span>🔗 {task._count?.subTasks ?? 0} subtasks</span>
-                                            </div>
-
-                                            <div className="flex gap-1">
-                                                {task.assignments?.slice(0, 3).map((assignment) => (
-                                                    <div
-                                                        key={assignment.id}
-                                                        className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs"
-                                                        title={assignment.user.name}
-                                                    >
-                                                        {assignment.user.name.charAt(0).toUpperCase()}
-                                                    </div>
-                                                ))}
-                                                {task.assignments && task.assignments.length > 3 && (
-                                                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                                                        +{task.assignments.length - 3}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
+                                    </Link>
+                                </div>
                             ))}
                         </div>
                     )}

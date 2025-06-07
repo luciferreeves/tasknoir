@@ -148,6 +148,14 @@ export const taskRouter = createTRPCRouter({
       const task = await ctx.db.task.findFirst({
         where: whereCondition,
         include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
           project: {
             select: {
               id: true,
@@ -571,27 +579,29 @@ export const taskRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Check if user has access to the task
-      const task = await ctx.db.task.findFirst({
-        where: {
-          id: input.taskId,
-          OR: [
-            {
-              project: {
-                ownerId: ctx.session.user.id,
-              },
-            },
-            {
-              project: {
-                members: {
-                  some: {
-                    userId: ctx.session.user.id,
-                    // Removed role field as it doesn't exist in the ProjectMember model
-                  },
-                },
-              },
-            },
-          ],
+      const userConditions = [
+        {
+          project: {
+            ownerId: ctx.session.user.id,
+          },
         },
+        {
+          project: {
+            members: {
+              some: {
+                userId: ctx.session.user.id,
+              },
+            },
+          },
+        },
+      ];
+
+      const whereCondition = isAdmin(ctx.session)
+        ? { id: input.taskId } // Admins can assign users to any task
+        : { id: input.taskId, OR: userConditions };
+
+      const task = await ctx.db.task.findFirst({
+        where: whereCondition,
       });
 
       if (!task) {

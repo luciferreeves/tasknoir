@@ -290,7 +290,7 @@ body {
 
 .input:focus {
   outline: none;
-  ring: 2px solid rgb(var(--ring));
+  /* ring: 2px solid rgb(var(--ring)); */
   border-color: transparent;
 }
 
@@ -312,7 +312,7 @@ body {
 
 .textarea:focus {
   outline: none;
-  ring: 2px solid rgb(var(--ring));
+  /* ring: 2px solid rgb(var(--ring)); */
   border-color: transparent;
 }
 
@@ -339,7 +339,7 @@ body {
 
 .select:focus {
   outline: none;
-  ring: 2px solid rgb(var(--ring));
+  /* ring: 2px solid rgb(var(--ring)); */
   border-color: transparent;
 }
 
@@ -417,11 +417,14 @@ body {
   border: 1px solid rgb(var(--success) / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 .priority-medium {
@@ -430,11 +433,14 @@ body {
   border: 1px solid rgb(var(--warning) / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 .priority-high {
@@ -443,11 +449,14 @@ body {
   border: 1px solid rgb(251 146 60 / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 .priority-urgent {
@@ -456,11 +465,14 @@ body {
   border: 1px solid rgb(var(--destructive) / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 /* Task Status System */
@@ -470,11 +482,14 @@ body {
   border: 1px solid rgb(156 163 175 / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 [data-theme="dark"] .status-todo {
@@ -489,11 +504,14 @@ body {
   border: 1px solid rgb(var(--primary) / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 .status-review {
@@ -502,11 +520,14 @@ body {
   border: 1px solid rgb(var(--warning) / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 .status-completed {
@@ -515,11 +536,14 @@ body {
   border: 1px solid rgb(var(--success) / 0.2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
   border-radius: 9999px;
-  padding: 0.125rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
+  text-align: center;
+  line-height: 1;
+  min-height: 1.5rem;
 }
 
 /* Loading & Animation */

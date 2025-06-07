@@ -161,21 +161,21 @@ const TaskDetailPage: NextPage = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "TODO": return "bg-muted text-muted-foreground";
-            case "IN_PROGRESS": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-            case "REVIEW": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-            case "COMPLETED": return "bg-success/10 text-success";
-            default: return "bg-muted text-muted-foreground";
+            case "TODO": return "status-todo";
+            case "IN_PROGRESS": return "status-in-progress";
+            case "REVIEW": return "status-review";
+            case "COMPLETED": return "status-completed";
+            default: return "status-todo";
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case "URGENT": return "bg-destructive/10 text-destructive";
-            case "HIGH": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
-            case "MEDIUM": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-            case "LOW": return "bg-success/10 text-success";
-            default: return "bg-muted text-muted-foreground";
+            case "URGENT": return "priority-urgent";
+            case "HIGH": return "priority-high";
+            case "MEDIUM": return "priority-medium";
+            case "LOW": return "priority-low";
+            default: return "priority-medium";
         }
     };
 
@@ -231,11 +231,11 @@ const TaskDetailPage: NextPage = () => {
 
                     <h1 className="text-3xl font-bold text-foreground mb-2">{task.title}</h1>
 
-                    <div className="flex items-center space-x-4 mb-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(task.status)}`}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <span className={getStatusColor(task.status)}>
                             {task.status.replace('_', ' ')}
                         </span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(task.priority)}`}>
+                        <span className={getPriorityColor(task.priority)}>
                             {task.priority}
                         </span>
                         {task.dueDate && (
@@ -378,13 +378,25 @@ const TaskDetailPage: NextPage = () => {
                                 </div>
                                 <div className="p-6 space-y-4">
                                     <div>
-                                        <span className="text-sm font-medium text-muted-foreground">Assignee</span>
-                                        <p className="text-foreground">
-                                            {task.assignments && task.assignments.length > 0
-                                                ? (task.assignments[0]?.user.name ?? task.assignments[0]?.user.email)
-                                                : 'Unassigned'
-                                            }
-                                        </p>
+                                        <span className="text-sm font-medium text-muted-foreground">
+                                            {task.assignments && task.assignments.length > 1 ? 'Assignees' : 'Assignee'}
+                                        </span>
+                                        {task.assignments && task.assignments.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {task.assignments.map((assignment) => (
+                                                    <div key={assignment.id} className="flex items-center space-x-2">
+                                                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium">
+                                                            {(assignment.user.name ?? assignment.user.email).charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <p className="text-foreground">
+                                                            {assignment.user.name ?? assignment.user.email}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-muted-foreground">Unassigned</p>
+                                        )}
                                     </div>
                                     <div>
                                         <span className="text-sm font-medium text-muted-foreground">Creator</span>
