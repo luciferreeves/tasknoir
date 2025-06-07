@@ -90,7 +90,7 @@ export default function Projects() {
 
                                 return (
                                     <Link key={project.id} href={`/projects/${project.id}`}>
-                                        <div className="card hover-lift cursor-pointer p-2">
+                                        <div className="card hover-lift cursor-pointer p-4 h-full flex flex-col">
                                             <div className="flex justify-between items-start mb-4">
                                                 <h3 className="text-xl font-semibold text-foreground truncate pr-4">
                                                     {project.title}
@@ -113,11 +113,13 @@ export default function Projects() {
                                                 </div>
                                             </div>
 
-                                            {project.description && (
-                                                <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                                                    {project.description}
-                                                </p>
-                                            )}
+                                            <div className="flex-1 mb-4">
+                                                {project.description && (
+                                                    <p className="text-muted-foreground text-sm line-clamp-3">
+                                                        {project.description}
+                                                    </p>
+                                                )}
+                                            </div>
 
                                             <div className="space-y-3">
                                                 <div>

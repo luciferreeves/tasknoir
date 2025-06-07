@@ -1,24 +1,29 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { isAdmin, hasAdminOrResourceAccess } from "~/server/api/utils/admin";
 
 export const projectRouter = createTRPCRouter({
   // Get all projects for the current user
   getAll: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const projects = await ctx.db.project.findMany({
-        where: {
-          OR: [
-            { ownerId: ctx.session.user.id },
-            {
-              members: {
-                some: {
-                  userId: ctx.session.user.id,
-                },
-              },
+      const userConditions = [
+        { ownerId: ctx.session.user.id },
+        {
+          members: {
+            some: {
+              userId: ctx.session.user.id,
             },
-          ],
+          },
         },
+      ];
+
+      const whereCondition = isAdmin(ctx.session)
+        ? {} // Admins see all projects
+        : { OR: userConditions };
+
+      const projects = await ctx.db.project.findMany({
+        where: whereCondition,
         include: {
           owner: {
             select: {
@@ -72,20 +77,23 @@ export const projectRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       try {
-        const project = await ctx.db.project.findFirst({
-          where: {
-            id: input.id,
-            OR: [
-              { ownerId: ctx.session.user.id },
-              {
-                members: {
-                  some: {
-                    userId: ctx.session.user.id,
-                  },
-                },
+        const userConditions = [
+          { ownerId: ctx.session.user.id },
+          {
+            members: {
+              some: {
+                userId: ctx.session.user.id,
               },
-            ],
+            },
           },
+        ];
+
+        const whereCondition = isAdmin(ctx.session)
+          ? { id: input.id } // Admins can access any project
+          : { id: input.id, OR: userConditions };
+
+        const project = await ctx.db.project.findFirst({
+          where: whereCondition,
           include: {
             owner: {
               select: {
@@ -227,19 +235,25 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        // Check if user owns the project
+        // Check if user owns the project or is admin
         const existingProject = await ctx.db.project.findFirst({
           where: {
             id: input.id,
-            ownerId: ctx.session.user.id,
           },
         });
 
         if (!existingProject) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message:
-              "Project not found or you do not have permission to update it",
+            message: "Project not found",
+          });
+        }
+
+        // Check access permission
+        if (!hasAdminOrResourceAccess(ctx.session, existingProject.ownerId)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have permission to update this project",
           });
         }
 
@@ -293,19 +307,25 @@ export const projectRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        // Check if user owns the project
+        // Check if project exists
         const existingProject = await ctx.db.project.findFirst({
           where: {
             id: input.id,
-            ownerId: ctx.session.user.id,
           },
         });
 
         if (!existingProject) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message:
-              "Project not found or you do not have permission to delete it",
+            message: "Project not found",
+          });
+        }
+
+        // Check access permission
+        if (!hasAdminOrResourceAccess(ctx.session, existingProject.ownerId)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have permission to delete this project",
           });
         }
 
@@ -336,19 +356,26 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        // Check if user owns the project
+        // Check if project exists and user has permission
         const project = await ctx.db.project.findFirst({
           where: {
             id: input.projectId,
-            ownerId: ctx.session.user.id,
           },
         });
 
         if (!project) {
           throw new TRPCError({
             code: "NOT_FOUND",
+            message: "Project not found",
+          });
+        }
+
+        // Check access permission
+        if (!hasAdminOrResourceAccess(ctx.session, project.ownerId)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
             message:
-              "Project not found or you do not have permission to add members",
+              "You do not have permission to add members to this project",
           });
         }
 
@@ -421,19 +448,26 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        // Check if user owns the project
+        // Check if project exists and user has permission
         const project = await ctx.db.project.findFirst({
           where: {
             id: input.projectId,
-            ownerId: ctx.session.user.id,
           },
         });
 
         if (!project) {
           throw new TRPCError({
             code: "NOT_FOUND",
+            message: "Project not found",
+          });
+        }
+
+        // Check access permission
+        if (!hasAdminOrResourceAccess(ctx.session, project.ownerId)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
             message:
-              "Project not found or you do not have permission to remove members",
+              "You do not have permission to remove members from this project",
           });
         }
 

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import type { Prisma } from "@prisma/client";
+import { isAdmin } from "~/server/api/utils/admin";
 
 export const taskRouter = createTRPCRouter({
   // Get all tasks for the current user
@@ -17,31 +18,33 @@ export const taskRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const where: Prisma.TaskWhereInput = {
-        OR: [
-          {
-            project: {
-              ownerId: ctx.session.user.id,
-            },
+      const userConditions = [
+        {
+          project: {
+            ownerId: ctx.session.user.id,
           },
-          {
-            project: {
-              members: {
-                some: {
-                  userId: ctx.session.user.id,
-                },
-              },
-            },
-          },
-          {
-            assignments: {
+        },
+        {
+          project: {
+            members: {
               some: {
                 userId: ctx.session.user.id,
               },
             },
           },
-        ],
-      };
+        },
+        {
+          assignments: {
+            some: {
+              userId: ctx.session.user.id,
+            },
+          },
+        },
+      ];
+
+      const where: Prisma.TaskWhereInput = isAdmin(ctx.session)
+        ? {} // Admins see all tasks
+        : { OR: userConditions };
 
       if (input.projectId) {
         where.projectId = input.projectId;
@@ -114,33 +117,36 @@ export const taskRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const task = await ctx.db.task.findFirst({
-        where: {
-          id: input.id,
-          OR: [
-            {
-              project: {
-                ownerId: ctx.session.user.id,
-              },
-            },
-            {
-              project: {
-                members: {
-                  some: {
-                    userId: ctx.session.user.id,
-                  },
-                },
-              },
-            },
-            {
-              assignments: {
-                some: {
-                  userId: ctx.session.user.id,
-                },
-              },
-            },
-          ],
+      const userConditions = [
+        {
+          project: {
+            ownerId: ctx.session.user.id,
+          },
         },
+        {
+          project: {
+            members: {
+              some: {
+                userId: ctx.session.user.id,
+              },
+            },
+          },
+        },
+        {
+          assignments: {
+            some: {
+              userId: ctx.session.user.id,
+            },
+          },
+        },
+      ];
+
+      const whereCondition = isAdmin(ctx.session)
+        ? { id: input.id } // Admins can access any task
+        : { id: input.id, OR: userConditions };
+
+      const task = await ctx.db.task.findFirst({
+        where: whereCondition,
         include: {
           project: {
             select: {
@@ -264,23 +270,33 @@ export const taskRouter = createTRPCRouter({
       const project = await ctx.db.project.findFirst({
         where: {
           id: input.projectId,
-          OR: [
-            { ownerId: ctx.session.user.id },
-            {
-              members: {
-                some: {
-                  userId: ctx.session.user.id,
-                },
-              },
-            },
-          ],
         },
       });
 
       if (!project) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Project not found or you do not have access to it",
+          message: "Project not found",
+        });
+      }
+
+      // Check if user has access (owner, member, or admin)
+      const isMember = await ctx.db.projectMember.findFirst({
+        where: {
+          projectId: input.projectId,
+          userId: ctx.session.user.id,
+        },
+      });
+
+      const hasAccess =
+        project.ownerId === ctx.session.user.id ||
+        !!isMember ||
+        isAdmin(ctx.session);
+
+      if (!hasAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have access to create tasks in this project",
         });
       }
 
@@ -396,36 +412,48 @@ export const taskRouter = createTRPCRouter({
       const existingTask = await ctx.db.task.findFirst({
         where: {
           id: input.id,
-          OR: [
-            {
-              project: {
-                ownerId: ctx.session.user.id,
-              },
+        },
+        include: {
+          project: true,
+          assignments: {
+            select: {
+              userId: true,
             },
-            {
-              project: {
-                members: {
-                  some: {
-                    userId: ctx.session.user.id,
-                  },
-                },
-              },
-            },
-            {
-              assignments: {
-                some: {
-                  userId: ctx.session.user.id,
-                },
-              },
-            },
-          ],
+          },
         },
       });
 
       if (!existingTask) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Task not found or you do not have permission to update it",
+          message: "Task not found",
+        });
+      }
+
+      // Check if user has access (project owner, member, assignee, or admin)
+      const isMember = existingTask.projectId
+        ? await ctx.db.projectMember.findFirst({
+            where: {
+              projectId: existingTask.projectId,
+              userId: ctx.session.user.id,
+            },
+          })
+        : null;
+
+      const isAssignee = existingTask.assignments.some(
+        (assignment) => assignment.userId === ctx.session.user.id,
+      );
+
+      const hasAccess =
+        existingTask.project?.ownerId === ctx.session.user.id ||
+        !!isMember ||
+        isAssignee ||
+        isAdmin(ctx.session);
+
+      if (!hasAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to update this task",
         });
       }
 
@@ -484,25 +512,40 @@ export const taskRouter = createTRPCRouter({
       const existingTask = await ctx.db.task.findFirst({
         where: {
           id: input.id,
-          OR: [
-            {
-              project: {
-                ownerId: ctx.session.user.id,
-              },
-            },
-            {
-              project: {
-                members: {
-                  some: {
-                    userId: ctx.session.user.id,
-                    // Removed role field as it doesn't exist in the ProjectMember model
-                  },
-                },
-              },
-            },
-          ],
+        },
+        include: {
+          project: true,
         },
       });
+
+      if (!existingTask) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found",
+        });
+      }
+
+      // Check if user has access (project owner, member, or admin)
+      const isMember = existingTask.projectId
+        ? await ctx.db.projectMember.findFirst({
+            where: {
+              projectId: existingTask.projectId,
+              userId: ctx.session.user.id,
+            },
+          })
+        : null;
+
+      const hasAccess =
+        existingTask.project?.ownerId === ctx.session.user.id ||
+        !!isMember ||
+        isAdmin(ctx.session);
+
+      if (!hasAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this task",
+        });
+      }
 
       if (!existingTask) {
         throw new TRPCError({

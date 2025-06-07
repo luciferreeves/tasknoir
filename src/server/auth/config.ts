@@ -27,8 +27,8 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      role: "USER" | "ADMIN";
       // ...other properties
-      // role: UserRole;
     } & DefaultSession["user"];
   }
 
@@ -36,12 +36,14 @@ declare module "next-auth" {
     id: string;
     email: string;
     name: string;
+    role: "USER" | "ADMIN";
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
+    role?: "USER" | "ADMIN";
   }
 }
 
@@ -96,6 +98,13 @@ export const authOptions: NextAuthOptions = {
 
           const user = await db.user.findUnique({
             where: { email },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              password: true,
+              role: true,
+            },
           });
           console.log("User lookup complete for:", email);
 
@@ -104,7 +113,6 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           const isPasswordValid = await bcrypt.compare(password, user.password);
           console.log("Password validation result:", isPasswordValid);
 
@@ -118,6 +126,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             email: user.email ?? "",
             name: user.name,
+            role: user.role,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -129,19 +138,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     jwt: ({ token, user }) => {
       if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         token.id = user.id;
+        token.role = user.role;
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return token;
     },
     session: ({ session, token }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (session.user && token.id) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         session.user.id = token.id;
+        session.user.role = token.role ?? "USER";
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return session;
     },
   },
@@ -156,6 +162,5 @@ export const getServerAuthSession = (ctx: {
   req: GetServerSidePropsContext["req"];
   res: GetServerSidePropsContext["res"];
 }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
   return getServerSession(ctx.req, ctx.res, authOptions);
 };
