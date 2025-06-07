@@ -204,7 +204,7 @@ const ProjectDetailPage: NextPage = () => {
                                 {projectTasks && projectTasks.length > 0 ? (
                                     <div className="space-y-4">
                                         {projectTasks.map((task) => (
-                                            <div key={task.id} className="card border hover-lift transition-all">
+                                            <div key={task.id} className="card border hover-lift transition-all p-4">
                                                 <div className="flex items-start justify-between mb-2">
                                                     <Link
                                                         href={`/tasks/${task.id}`}

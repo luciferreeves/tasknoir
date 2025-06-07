@@ -58,7 +58,7 @@ export default function Dashboard() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
                                         <span className="text-muted-foreground font-medium">Total Tasks</span>
-                                        <span className="text-2xl font-bold text-foreground">0</span>
+                                        <span className="text-xl font-semibold text-foreground">0</span>
                                     </div>
                                     <div className="flex justify-between items-center p-3 rounded-lg bg-success/5">
                                         <span className="text-muted-foreground font-medium">Completed</span>

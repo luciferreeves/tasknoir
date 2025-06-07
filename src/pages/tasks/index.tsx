@@ -135,10 +135,10 @@ export default function Tasks() {
                     </div>
 
                     {/* Filters */}
-                    <div className="card mb-6">
-                        <div className="flex flex-wrap gap-4 items-center">
-                            <div>
-                                <label className="label">Status</label>
+                    <div className="card p-6 mb-6">
+                        <div className="flex gap-6 items-center overflow-x-auto">
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <label className="label text-sm font-medium whitespace-nowrap">Status:</label>
                                 <select
                                     value={filters.status ?? ""}
                                     onChange={(e) => setFilters(prev => ({
@@ -156,8 +156,8 @@ export default function Tasks() {
                                 </select>
                             </div>
 
-                            <div>
-                                <label className="label">Priority</label>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <label className="label text-sm font-medium whitespace-nowrap">Priority:</label>
                                 <select
                                     value={filters.priority ?? ""}
                                     onChange={(e) => setFilters(prev => ({
@@ -175,7 +175,7 @@ export default function Tasks() {
                                 </select>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                                 <input
                                     type="checkbox"
                                     id="assignedToMe"
@@ -186,14 +186,14 @@ export default function Tasks() {
                                     }))}
                                     className="rounded"
                                 />
-                                <label htmlFor="assignedToMe" className="label">
+                                <label htmlFor="assignedToMe" className="label text-sm font-medium whitespace-nowrap">
                                     Assigned to me
                                 </label>
                             </div>
 
                             <button
                                 onClick={() => setFilters({ status: undefined, priority: undefined, assignedToMe: false })}
-                                className="btn btn-ghost text-sm"
+                                className="btn btn-ghost text-sm flex-shrink-0"
                             >
                                 Clear filters
                             </button>
@@ -221,7 +221,7 @@ export default function Tasks() {
                         <div className="space-y-4">
                             {tasks?.map((task) => (
                                 <Link key={task.id} href={`/tasks/${task.id}`}>
-                                    <div className="card hover-lift cursor-pointer">
+                                    <div className="card p-6 hover-lift cursor-pointer">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2">
@@ -254,15 +254,9 @@ export default function Tasks() {
                                                 {task.dueDate && (
                                                     <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
                                                 )}
-                                                {task._count?.comments && task._count.comments > 0 && (
-                                                    <span>💬 {task._count.comments}</span>
-                                                )}
-                                                {task._count?.attachments && task._count.attachments > 0 && (
-                                                    <span>📎 {task._count.attachments}</span>
-                                                )}
-                                                {task._count?.subTasks && task._count.subTasks > 0 && (
-                                                    <span>🔗 {task._count.subTasks} subtasks</span>
-                                                )}
+                                                <span>💬 {task._count?.comments ?? 0}</span>
+                                                <span>📎 {task._count?.attachments ?? 0}</span>
+                                                <span>🔗 {task._count?.subTasks ?? 0} subtasks</span>
                                             </div>
 
                                             <div className="flex gap-1">
