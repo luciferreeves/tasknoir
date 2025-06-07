@@ -57,7 +57,7 @@ export default function Navbar() {
                         <ThemeToggle />
 
                         <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2">
+                            <Link href="/profile" className="flex items-center space-x-2 hover:bg-accent/50 px-3 py-2 rounded-md transition-colors">
                                 {session.user?.image && (
                                     <img
                                         className="h-8 w-8 rounded-full"
@@ -68,7 +68,7 @@ export default function Navbar() {
                                 <span className="text-sm font-medium text-foreground hidden sm:block">
                                     {session.user?.name}
                                 </span>
-                            </div>
+                            </Link>
 
                             <button
                                 onClick={handleSignOut}

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { isAdmin } from "~/server/api/utils/admin";
+import { deleteImageFromStorage } from "~/lib/supabase";
 
 export const userRouter = createTRPCRouter({
   // Get all users that the current user can assign tasks to
@@ -14,6 +16,17 @@ export const userRouter = createTRPCRouter({
           email: true,
           image: true,
           role: true,
+          bio: true,
+          emailVerified: true,
+          createdAt: true,
+          _count: {
+            select: {
+              ownedProjects: true,
+              projectMembers: true,
+              assignedTasks: true,
+              ownedTasks: true,
+            },
+          },
         },
         orderBy: [{ name: "asc" }, { email: "asc" }],
       });
@@ -125,9 +138,21 @@ export const userRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1, "Name is required").optional(),
         bio: z.string().optional(),
+        image: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      let oldImageUrl: string | null = null;
+
+      // If updating image, get the old image URL first for cleanup
+      if (input.image) {
+        const currentUser = await ctx.db.user.findUnique({
+          where: { id: ctx.session.user.id },
+          select: { image: true },
+        });
+        oldImageUrl = currentUser?.image ?? null;
+      }
+
       const user = await ctx.db.user.update({
         where: { id: ctx.session.user.id },
         data: input,
@@ -140,8 +165,113 @@ export const userRouter = createTRPCRouter({
         },
       });
 
+      // Delete old image from storage if it exists and is different from new image
+      if (oldImageUrl && input.image && oldImageUrl !== input.image) {
+        // Don't await this - let it run in background to avoid blocking the response
+        void deleteImageFromStorage(oldImageUrl);
+      }
+
       return user;
     }),
+
+  // Admin: Update any user's profile (admin only)
+  updateUserProfile: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1, "Name is required").optional(),
+        bio: z.string().optional(),
+        image: z.string().optional(),
+        emailVerified: z.boolean().optional(),
+        role: z.enum(["USER", "ADMIN"]).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Only admins can update other users
+      if (!isAdmin(ctx.session)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins can update user profiles",
+        });
+      }
+
+      const { id, ...updateData } = input;
+      let oldImageUrl: string | null = null;
+
+      // If updating image, get the old image URL first for cleanup
+      if (updateData.image) {
+        const currentUser = await ctx.db.user.findUnique({
+          where: { id },
+          select: { image: true },
+        });
+        oldImageUrl = currentUser?.image ?? null;
+      }
+
+      const user = await ctx.db.user.update({
+        where: { id },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          bio: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+          _count: {
+            select: {
+              ownedProjects: true,
+              projectMembers: true,
+              assignedTasks: true,
+              ownedTasks: true,
+            },
+          },
+        },
+      });
+
+      // Delete old image from storage if it exists and is different from new image
+      if (oldImageUrl && updateData.image && oldImageUrl !== updateData.image) {
+        // Don't await this - let it run in background to avoid blocking the response
+        void deleteImageFromStorage(oldImageUrl);
+      }
+
+      return user;
+    }),
+
+  // Get current user's profile
+  getMyProfile: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        role: true,
+        bio: true,
+        emailVerified: true,
+        createdAt: true,
+        _count: {
+          select: {
+            ownedProjects: true,
+            projectMembers: true,
+            assignedTasks: true,
+            ownedTasks: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "User not found",
+      });
+    }
+
+    return user;
+  }),
 
   // Search users by email or name (for adding to projects)
   search: protectedProcedure
