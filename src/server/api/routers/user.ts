@@ -5,12 +5,29 @@ import { TRPCError } from "@trpc/server";
 export const userRouter = createTRPCRouter({
   // Get all users that the current user can assign tasks to
   getAll: protectedProcedure.query(async ({ ctx }) => {
+    // Admins can see all users
+    if (ctx.session.user.role === "ADMIN") {
+      const allUsers = await ctx.db.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+        },
+        orderBy: [{ name: "asc" }, { email: "asc" }],
+      });
+      return allUsers;
+    }
+
     // Get users who are members of projects that the current user owns or is a member of
     const users = await ctx.db.user.findMany({
       where: {
         OR: [
           // Include the current user
           { id: ctx.session.user.id },
+          // Include all admin users
+          { role: "ADMIN" },
           // Include users who are members of projects owned by current user
           {
             projectMembers: {

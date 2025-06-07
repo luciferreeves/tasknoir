@@ -10,6 +10,13 @@ import Navbar from "~/components/Navbar";
 type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "COMPLETED";
 
+interface UserType {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+}
+
 const EditTaskPage: NextPage = () => {
     const router = useRouter();
     const { status } = useSession();
@@ -22,12 +29,14 @@ const EditTaskPage: NextPage = () => {
         priority: TaskPriority;
         status: TaskStatus;
         dueDate: string;
+        assigneeIds: string[];
     }>({
         title: "",
         description: "",
         priority: "MEDIUM",
         status: "TODO",
         dueDate: "",
+        assigneeIds: [],
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,12 +46,28 @@ const EditTaskPage: NextPage = () => {
         { enabled: !!taskId && status === "authenticated" }
     );
 
+    // Get available users - project members + admins
+    const { data: users, isLoading: usersLoading } = api.user.getAll.useQuery(
+        undefined,
+        { enabled: status === "authenticated" }
+    );
+
     const updateTaskMutation = api.task.update.useMutation({
         onSuccess: () => {
             void router.push(`/tasks/${taskId}`);
         },
         onError: (error: unknown) => {
             console.error("Error updating task:", error);
+            setIsSubmitting(false);
+        },
+    });
+
+    const assignUsersMutation = api.task.assignUsers.useMutation({
+        onSuccess: () => {
+            void router.push(`/tasks/${taskId}`);
+        },
+        onError: (error: unknown) => {
+            console.error("Error assigning users:", error);
             setIsSubmitting(false);
         },
     });
@@ -56,6 +81,7 @@ const EditTaskPage: NextPage = () => {
                 priority: task.priority,
                 status: task.status,
                 dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0]! : "",
+                assigneeIds: task.assignments?.map(a => a.user.id) ?? [],
             });
         }
     }, [task]);
@@ -87,14 +113,28 @@ const EditTaskPage: NextPage = () => {
         const submitData = {
             id: taskId,
             title: formData.title,
-            description: formData.description || undefined,
+            description: formData.description ?? undefined,
             priority: formData.priority,
             status: formData.status,
             dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
         };
 
-        updateTaskMutation.mutate(submitData);
+        try {
+            // Update task details first
+            await updateTaskMutation.mutateAsync(submitData);
+
+            // Then update assignments
+            await assignUsersMutation.mutateAsync({
+                taskId,
+                userIds: formData.assigneeIds,
+            });
+        } catch (error) {
+            console.error("Error updating task:", error);
+            setIsSubmitting(false);
+        }
     };
+
+    const usersList = (users as UserType[] | undefined) ?? [];
 
     return (
         <div className="min-h-screen bg-background">
@@ -206,6 +246,37 @@ const EditTaskPage: NextPage = () => {
                                 />
                             </div>
 
+                            {/* Team Assignment */}
+                            {!usersLoading && usersList.length > 0 && (
+                                <div>
+                                    <h3 className="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                                        Team Assignment
+                                    </h3>
+                                    <div>
+                                        <label className="label">
+                                            Assign To
+                                        </label>
+                                        <select
+                                            multiple
+                                            aria-label="Select assignees"
+                                            value={formData.assigneeIds}
+                                            onChange={(e) => {
+                                                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                                                setFormData({ ...formData, assigneeIds: selectedOptions });
+                                            }}
+                                            className="select h-32"
+                                        >
+                                            {usersList.map((user) => (
+                                                <option key={user.id} value={user.id}>
+                                                    {user.name} ({user.email}) {user.role === "ADMIN" ? "[Admin]" : ""}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-1 text-xs text-muted-foreground">Hold Ctrl/Cmd to select multiple users</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Submit Buttons */}
                             <div className="flex justify-end space-x-4 pt-6 border-t border-border">
                                 <Link
@@ -227,7 +298,7 @@ const EditTaskPage: NextPage = () => {
                 </div>
 
                 {/* Error Display */}
-                {updateTaskMutation.error && (
+                {(updateTaskMutation.error ?? assignUsersMutation.error) && (
                     <div className="mt-6 max-w-2xl mx-auto">
                         <div className="card bg-destructive/5 border-destructive/20 p-4">
                             <div className="flex">
@@ -236,7 +307,7 @@ const EditTaskPage: NextPage = () => {
                                         Error updating task
                                     </h3>
                                     <div className="mt-2 text-sm text-destructive/80">
-                                        <p>{updateTaskMutation.error.message}</p>
+                                        <p>{updateTaskMutation.error?.message ?? assignUsersMutation.error?.message}</p>
                                     </div>
                                 </div>
                             </div>

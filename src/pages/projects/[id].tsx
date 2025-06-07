@@ -8,6 +8,18 @@ import { api } from "~/utils/api";
 import Loading from "~/components/Loading";
 import Navbar from "~/components/Navbar";
 
+// Type definitions for milestones
+interface MilestoneType {
+    id: string;
+    title: string;
+    description: string | null;
+    dueDate: Date | null;
+    completed: boolean;
+    projectId: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 const ProjectDetailPage: NextPage = () => {
     const router = useRouter();
     const { data: session, status } = useSession();
@@ -19,6 +31,15 @@ const ProjectDetailPage: NextPage = () => {
     const [isAddingMember, setIsAddingMember] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+
+    // State for milestone management
+    const [showAddMilestone, setShowAddMilestone] = useState(false);
+    const [editingMilestone, setEditingMilestone] = useState<string | null>(null);
+    const [milestoneForm, setMilestoneForm] = useState({
+        title: "",
+        description: "",
+        dueDate: "",
+    });
 
     const projectQuery = api.project.getById.useQuery(
         { id: id as string },
@@ -35,6 +56,14 @@ const ProjectDetailPage: NextPage = () => {
     );
 
     const projectTasks = tasksQuery.data;
+
+    // Milestone queries
+    const milestonesQuery = api.milestone.getByProjectId.useQuery(
+        { projectId: id as string },
+        { enabled: !!id && status === "authenticated" }
+    );
+
+    const milestones = milestonesQuery.data;
 
     // User search for autocomplete
     const userSearchQuery = api.user.search.useQuery(
@@ -69,6 +98,38 @@ const ProjectDetailPage: NextPage = () => {
         },
     });
 
+    // Milestone management mutations
+    const createMilestoneMutation = api.milestone.create.useMutation({
+        onSuccess: () => {
+            void milestonesQuery.refetch();
+            setShowAddMilestone(false);
+            setMilestoneForm({ title: "", description: "", dueDate: "" });
+        },
+        onError: (error) => {
+            alert(error.message || "An error occurred");
+        },
+    });
+
+    const updateMilestoneMutation = api.milestone.update.useMutation({
+        onSuccess: () => {
+            void milestonesQuery.refetch();
+            setEditingMilestone(null);
+            setMilestoneForm({ title: "", description: "", dueDate: "" });
+        },
+        onError: (error) => {
+            alert(error.message || "An error occurred");
+        },
+    });
+
+    const deleteMilestoneMutation = api.milestone.delete.useMutation({
+        onSuccess: () => {
+            void milestonesQuery.refetch();
+        },
+        onError: (error) => {
+            alert(error.message || "An error occurred");
+        },
+    });
+
     // Check if current user is owner or admin
     const isOwner = project?.owner.id === session?.user.id;
     const isAdmin = session?.user.role === "ADMIN";
@@ -94,6 +155,53 @@ const ProjectDetailPage: NextPage = () => {
                 userId,
             });
         }
+    };
+
+    // Milestone management handlers
+    const handleAddMilestone = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!project || !milestoneForm.title.trim()) return;
+
+        createMilestoneMutation.mutate({
+            projectId: project.id,
+            title: milestoneForm.title.trim(),
+            description: milestoneForm.description.trim() || undefined,
+            dueDate: milestoneForm.dueDate ? new Date(milestoneForm.dueDate) : undefined,
+        });
+    };
+
+    const handleEditMilestone = (milestone: MilestoneType) => {
+        setEditingMilestone(milestone.id);
+        setMilestoneForm({
+            title: milestone.title,
+            description: milestone.description ?? "",
+            dueDate: milestone.dueDate ? new Date(milestone.dueDate).toISOString().split('T')[0]! : "",
+        });
+    };
+
+    const handleUpdateMilestone = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingMilestone || !milestoneForm.title.trim()) return;
+
+        updateMilestoneMutation.mutate({
+            id: editingMilestone,
+            title: milestoneForm.title.trim(),
+            description: milestoneForm.description.trim() || undefined,
+            dueDate: milestoneForm.dueDate ? new Date(milestoneForm.dueDate) : undefined,
+        });
+    };
+
+    const handleDeleteMilestone = (milestoneId: string) => {
+        if (confirm("Are you sure you want to delete this milestone?")) {
+            deleteMilestoneMutation.mutate({ id: milestoneId });
+        }
+    };
+
+    const handleToggleMilestone = (milestone: MilestoneType) => {
+        updateMilestoneMutation.mutate({
+            id: milestone.id,
+            completed: !milestone.completed,
+        });
     };
 
     if (status === "loading" || isLoading) return <Loading />;
@@ -307,7 +415,234 @@ const ProjectDetailPage: NextPage = () => {
                             </div>
                         </div>
 
-                        {/* Milestones Section - Remove this section since milestones don't exist in schema */}
+                        {/* Milestones Section */}
+                        <div className="card">
+                            <div className="p-6 border-b border-border">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-xl font-semibold text-foreground">Milestones</h2>
+                                    {canManageMembers && (
+                                        <button
+                                            onClick={() => setShowAddMilestone(true)}
+                                            className="btn btn-primary btn-sm"
+                                        >
+                                            Add Milestone
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="p-6">
+                                {/* Add Milestone Form */}
+                                {showAddMilestone && (
+                                    <div className="mb-6 p-4 border border-border rounded-lg bg-muted/50">
+                                        <h4 className="text-sm font-medium text-foreground mb-3">Add New Milestone</h4>
+                                        <form onSubmit={handleAddMilestone} className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-foreground mb-2">
+                                                    Title
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={milestoneForm.title}
+                                                    onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })}
+                                                    placeholder="Enter milestone title"
+                                                    className="input"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-foreground mb-2">
+                                                    Description
+                                                </label>
+                                                <textarea
+                                                    value={milestoneForm.description}
+                                                    onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })}
+                                                    placeholder="Enter milestone description (optional)"
+                                                    className="textarea"
+                                                    rows={4}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label htmlFor="milestone-due-date-add" className="block text-sm font-medium text-foreground mb-2">
+                                                    Due Date
+                                                </label>
+                                                <input
+                                                    id="milestone-due-date-add"
+                                                    type="date"
+                                                    value={milestoneForm.dueDate}
+                                                    onChange={(e) => setMilestoneForm({ ...milestoneForm, dueDate: e.target.value })}
+                                                    className="input"
+                                                />
+                                            </div>
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    type="submit"
+                                                    disabled={createMilestoneMutation.isPending || !milestoneForm.title.trim()}
+                                                    className="btn btn-primary btn-sm"
+                                                >
+                                                    {createMilestoneMutation.isPending ? "Creating..." : "Create Milestone"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowAddMilestone(false);
+                                                        setMilestoneForm({ title: "", description: "", dueDate: "" });
+                                                    }}
+                                                    className="btn btn-ghost btn-sm"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+
+                                {/* Milestones List */}
+                                {milestones && milestones.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {milestones.map((milestone) => (
+                                            <div key={milestone.id} className="card border p-4">
+                                                {editingMilestone === milestone.id ? (
+                                                    /* Edit Form */
+                                                    <form onSubmit={handleUpdateMilestone} className="space-y-4">
+                                                        <div>
+                                                            <label htmlFor="milestone-title-edit" className="block text-sm font-medium text-foreground mb-2">
+                                                                Title
+                                                            </label>
+                                                            <input
+                                                                id="milestone-title-edit"
+                                                                type="text"
+                                                                value={milestoneForm.title}
+                                                                onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })}
+                                                                className="input"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-foreground mb-2">
+                                                                Description
+                                                            </label>
+                                                            <textarea
+                                                                value={milestoneForm.description}
+                                                                onChange={(e) => setMilestoneForm({ ...milestoneForm, description: e.target.value })}
+                                                                className="textarea"
+                                                                rows={4}
+                                                                placeholder="Enter milestone description (optional)"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="milestone-due-date-edit" className="block text-sm font-medium text-foreground mb-2">
+                                                                Due Date
+                                                            </label>
+                                                            <input
+                                                                id="milestone-due-date-edit"
+                                                                type="date"
+                                                                value={milestoneForm.dueDate}
+                                                                onChange={(e) => setMilestoneForm({ ...milestoneForm, dueDate: e.target.value })}
+                                                                className="input"
+                                                            />
+                                                        </div>
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                type="submit"
+                                                                disabled={updateMilestoneMutation.isPending}
+                                                                className="btn btn-primary btn-sm"
+                                                            >
+                                                                {updateMilestoneMutation.isPending ? "Saving..." : "Save Changes"}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setEditingMilestone(null);
+                                                                    setMilestoneForm({ title: "", description: "", dueDate: "" });
+                                                                }}
+                                                                className="btn btn-ghost btn-sm"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    /* Display Mode */
+                                                    <div className="flex items-start space-x-4">
+                                                        {/* Checkbox - Fixed size and separated */}
+                                                        <div className="flex-shrink-0 pt-1">
+                                                            <button
+                                                                onClick={() => handleToggleMilestone(milestone)}
+                                                                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${milestone.completed
+                                                                    ? 'bg-success border-success text-success-foreground'
+                                                                    : 'border-border hover:border-primary'
+                                                                    }`}
+                                                                disabled={updateMilestoneMutation.isPending}
+                                                            >
+                                                                {milestone.completed && (
+                                                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                )}
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Content - Flexible width */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className={`font-medium ${milestone.completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                                                                        {milestone.title}
+                                                                    </h4>
+                                                                    {milestone.description && (
+                                                                        <p className={`text-sm mt-1 ${milestone.completed ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                                                                            {milestone.description}
+                                                                        </p>
+                                                                    )}
+                                                                    {milestone.dueDate && (
+                                                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-2">
+                                                                            <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                                                                            {new Date(milestone.dueDate) < new Date() && !milestone.completed && (
+                                                                                <span className="badge badge-destructive text-xs">Overdue</span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {canManageMembers && (
+                                                                    <div className="flex space-x-2 ml-4">
+                                                                        <button
+                                                                            onClick={() => handleEditMilestone(milestone)}
+                                                                            className="btn btn-ghost btn-sm"
+                                                                            title="Edit milestone"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteMilestone(milestone.id)}
+                                                                            className="btn btn-ghost btn-sm text-destructive hover:bg-destructive/10"
+                                                                            title="Delete milestone"
+                                                                        >
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <p className="text-muted-foreground mb-4">No milestones yet</p>
+                                        {canManageMembers && (
+                                            <button
+                                                onClick={() => setShowAddMilestone(true)}
+                                                className="btn btn-primary"
+                                            >
+                                                Create First Milestone
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                     </div>
 

@@ -330,6 +330,13 @@ body {
   cursor: pointer;
 }
 
+/* Multi-select should respect height classes */
+.select[multiple] {
+  height: auto;
+  align-items: flex-start;
+  min-height: 2.5rem;
+}
+
 .select:focus {
   outline: none;
   ring: 2px solid rgb(var(--ring));
@@ -524,7 +531,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Utility Classes */

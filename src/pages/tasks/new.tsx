@@ -16,6 +16,7 @@ interface UserType {
     id: string;
     name: string;
     email: string;
+    role: string;
 }
 
 const NewTaskPage: NextPage = () => {
@@ -252,7 +253,7 @@ const NewTaskPage: NextPage = () => {
                                         >
                                             {usersList.map((user) => (
                                                 <option key={user.id} value={user.id}>
-                                                    {user.name} ({user.email})
+                                                    {user.name} ({user.email}) {user.role === "ADMIN" ? "[Admin]" : ""}
                                                 </option>
                                             ))}
                                         </select>
