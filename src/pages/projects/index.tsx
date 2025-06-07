@@ -121,23 +121,30 @@ export default function Projects() {
                                                 )}
                                             </div>
 
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                                                        <span>Progress</span>
-                                                        <span>{progress}%</span>
-                                                    </div>
-                                                    <div className="w-full bg-muted rounded-full h-2">
-                                                        <div
-                                                            className={`bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all ${progress === 0 ? 'w-0' :
-                                                                progress <= 25 ? 'w-1/4' :
-                                                                    progress <= 50 ? 'w-1/2' :
-                                                                        progress <= 75 ? 'w-3/4' :
-                                                                            'w-full'
-                                                                }`}
-                                                        ></div>
-                                                    </div>
+                                            <div className="space-y-3">                                <div>
+                                                <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                                                    <span>Progress</span>
+                                                    <span className={
+                                                        progress >= 80 ? 'text-green-600 font-semibold' :
+                                                            progress >= 60 ? 'text-blue-600 font-semibold' :
+                                                                progress >= 40 ? 'text-yellow-600 font-semibold' :
+                                                                    progress >= 20 ? 'text-orange-600 font-semibold' :
+                                                                        'text-red-600 font-semibold'
+                                                    }>{progress}%</span>
                                                 </div>
+                                                <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                                                    <div
+                                                        className={`h-3 rounded-full transition-all duration-500 ease-out ${progress === 0 ? 'w-0 bg-muted' :
+                                                                progress >= 80 ? 'bg-gradient-to-r from-green-500 to-green-400' :
+                                                                    progress >= 60 ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
+                                                                        progress >= 40 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
+                                                                            progress >= 20 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
+                                                                                'bg-gradient-to-r from-red-500 to-red-400'
+                                                            }`}
+                                                        style={{ width: `${progress}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
 
                                                 <div className="flex justify-between text-sm">
                                                     <span className="text-muted-foreground">

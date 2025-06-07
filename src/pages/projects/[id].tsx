@@ -337,18 +337,25 @@ const ProjectDetailPage: NextPage = () => {
                     <div className="mb-6">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-sm font-medium text-foreground">Progress</span>
-                            <span className="text-sm text-muted-foreground">
-                                {completedTasks}/{totalTasks} tasks completed
+                            <span className={`text-sm font-semibold ${progressPercentage >= 80 ? 'text-green-600' :
+                                    progressPercentage >= 60 ? 'text-blue-600' :
+                                        progressPercentage >= 40 ? 'text-yellow-600' :
+                                            progressPercentage >= 20 ? 'text-orange-600' :
+                                                'text-red-600'
+                                }`}>
+                                {Math.round(progressPercentage)}% ({completedTasks}/{totalTasks} tasks completed)
                             </span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-3">
+                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                             <div
-                                className={`bg-primary h-3 rounded-full transition-all duration-300 ${progressPercentage === 0 ? 'w-0' :
-                                    progressPercentage <= 25 ? 'w-1/4' :
-                                        progressPercentage <= 50 ? 'w-1/2' :
-                                            progressPercentage <= 75 ? 'w-3/4' :
-                                                'w-full'
+                                className={`h-3 rounded-full transition-all duration-500 ease-out ${progressPercentage === 0 ? 'w-0 bg-muted' :
+                                        progressPercentage >= 80 ? 'bg-gradient-to-r from-green-500 to-green-400' :
+                                            progressPercentage >= 60 ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
+                                                progressPercentage >= 40 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
+                                                    progressPercentage >= 20 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
+                                                        'bg-gradient-to-r from-red-500 to-red-400'
                                     }`}
+                                style={{ width: `${progressPercentage}%` }}
                             ></div>
                         </div>
                     </div>
