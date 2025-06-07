@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
 
@@ -112,10 +113,12 @@ export default function Dashboard() {
                                 <div className="space-y-4">
                                     {session.user?.image && (
                                         <div className="flex justify-center">
-                                            <img
-                                                className="h-16 w-16 rounded-full border-2 border-border shadow-sm"
+                                            <Image
+                                                className="h-16 w-16 rounded-full border-2 border-border shadow-sm object-cover"
                                                 src={session.user.image}
                                                 alt="Profile"
+                                                width={64}
+                                                height={64}
                                             />
                                         </div>
                                     )}

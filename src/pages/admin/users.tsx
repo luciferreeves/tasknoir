@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import Image from "next/image";
 import { api } from "~/utils/api";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
@@ -157,10 +158,12 @@ export default function AdminUsers() {
                                                         <div className="flex-shrink-0 h-10 w-10">
                                                             <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center overflow-hidden">
                                                                 {user.image ? (
-                                                                    <img
+                                                                    <Image
                                                                         className="h-10 w-10 rounded-full object-cover"
                                                                         src={user.image}
                                                                         alt=""
+                                                                        width={40}
+                                                                        height={40}
                                                                     />
                                                                 ) : (
                                                                     <span className="text-sm font-medium text-primary-foreground">
@@ -202,8 +205,8 @@ export default function AdminUsers() {
                                                         </select>
                                                     ) : (
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === "ADMIN"
-                                                                ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
-                                                                : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                                                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+                                                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
                                                             }`}>
                                                             {user.role}
                                                         </span>

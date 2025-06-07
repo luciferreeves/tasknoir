@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "~/utils/api";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
@@ -131,10 +132,12 @@ export default function Profile() {
                                         <div className="relative inline-block">
                                             <div className="w-32 h-32 mx-auto bg-primary rounded-full flex items-center justify-center overflow-hidden">
                                                 {profile.image ? (
-                                                    <img
+                                                    <Image
                                                         src={profile.image}
                                                         alt="Profile"
                                                         className="w-full h-full object-cover"
+                                                        width={128}
+                                                        height={128}
                                                     />
                                                 ) : (
                                                     <span className="text-4xl font-bold text-primary-foreground">
@@ -175,8 +178,8 @@ export default function Profile() {
                                         <p className="text-muted-foreground">{profile.email}</p>
                                         <div className="mt-2 flex items-center justify-center space-x-2">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${profile.role === "ADMIN"
-                                                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
-                                                    : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                                                ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300"
+                                                : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
                                                 }`}>
                                                 {profile.role}
                                             </span>

@@ -1,6 +1,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 
 export default function Navbar() {
@@ -59,10 +60,12 @@ export default function Navbar() {
                         <div className="flex items-center space-x-3">
                             <Link href="/profile" className="flex items-center space-x-2 hover:bg-accent/50 px-3 py-2 rounded-md transition-colors">
                                 {session.user?.image && (
-                                    <img
-                                        className="h-8 w-8 rounded-full"
+                                    <Image
+                                        className="h-8 w-8 rounded-full object-cover"
                                         src={session.user.image}
                                         alt="Profile"
+                                        width={32}
+                                        height={32}
                                     />
                                 )}
                                 <span className="text-sm font-medium text-foreground hidden sm:block">
