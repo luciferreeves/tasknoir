@@ -59,16 +59,42 @@ export default function Tasks() {
         status: TaskStatus | undefined;
         priority: TaskPriority | undefined;
         assignedToMe: boolean;
+        assignedToUser: string | undefined;
+        hasSubtasks: boolean;
+        overdue: boolean;
+        dueSoon: boolean;
     }>({
         status: undefined,
         priority: undefined,
         assignedToMe: false,
+        assignedToUser: undefined,
+        hasSubtasks: false,
+        overdue: false,
+        dueSoon: false,
     });
 
     const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
 
     const { data: tasksData, isLoading } = api.task.getAll.useQuery(filters);
+    const { data: users } = api.user.getAll.useQuery();
     const tasks = tasksData as TaskWithRelations[] | undefined;
+
+    // Handle URL query parameters for filters
+    useEffect(() => {
+        if (router.query.filter) {
+            const filterParam = router.query.filter as string;
+            switch (filterParam) {
+                case 'overdue':
+                    setFilters(prev => ({ ...prev, overdue: true }));
+                    break;
+                case 'due-soon':
+                    setFilters(prev => ({ ...prev, dueSoon: true }));
+                    break;
+            }
+            // Clear the query parameter after applying the filter
+            void router.replace('/tasks', undefined, { shallow: true });
+        }
+    }, [router.query.filter, router]);
 
     // Organize tasks into parent-child relationships
     const organizedTasks = () => {
@@ -332,7 +358,8 @@ export default function Tasks() {
                                     checked={filters.assignedToMe}
                                     onChange={(e) => setFilters(prev => ({
                                         ...prev,
-                                        assignedToMe: e.target.checked
+                                        assignedToMe: e.target.checked,
+                                        assignedToUser: e.target.checked ? undefined : prev.assignedToUser
                                     }))}
                                     className="rounded"
                                 />
@@ -341,8 +368,88 @@ export default function Tasks() {
                                 </label>
                             </div>
 
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <label className="label text-sm font-medium whitespace-nowrap">Assigned to:</label>
+                                <select
+                                    value={filters.assignedToUser ?? ""}
+                                    onChange={(e) => setFilters(prev => ({
+                                        ...prev,
+                                        assignedToUser: e.target.value || undefined,
+                                        assignedToMe: e.target.value ? false : prev.assignedToMe
+                                    }))}
+                                    className="select"
+                                    aria-label="Filter by assigned user"
+                                    disabled={filters.assignedToMe}
+                                >
+                                    <option value="">Any User</option>
+                                    {users?.map((user) => (
+                                        <option key={user.id} value={user.id}>
+                                            {user.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <input
+                                    type="checkbox"
+                                    id="hasSubtasks"
+                                    checked={filters.hasSubtasks}
+                                    onChange={(e) => setFilters(prev => ({
+                                        ...prev,
+                                        hasSubtasks: e.target.checked
+                                    }))}
+                                    className="rounded"
+                                />
+                                <label htmlFor="hasSubtasks" className="label text-sm font-medium whitespace-nowrap">
+                                    Has Subtasks
+                                </label>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <input
+                                    type="checkbox"
+                                    id="overdue"
+                                    checked={filters.overdue}
+                                    onChange={(e) => setFilters(prev => ({
+                                        ...prev,
+                                        overdue: e.target.checked,
+                                        dueSoon: e.target.checked ? false : prev.dueSoon
+                                    }))}
+                                    className="rounded"
+                                />
+                                <label htmlFor="overdue" className="label text-sm font-medium whitespace-nowrap text-red-600 dark:text-red-400">
+                                    Overdue
+                                </label>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <input
+                                    type="checkbox"
+                                    id="dueSoon"
+                                    checked={filters.dueSoon}
+                                    onChange={(e) => setFilters(prev => ({
+                                        ...prev,
+                                        dueSoon: e.target.checked,
+                                        overdue: e.target.checked ? false : prev.overdue
+                                    }))}
+                                    className="rounded"
+                                />
+                                <label htmlFor="dueSoon" className="label text-sm font-medium whitespace-nowrap text-yellow-600 dark:text-yellow-400">
+                                    Due This Week
+                                </label>
+                            </div>
+
                             <button
-                                onClick={() => setFilters({ status: undefined, priority: undefined, assignedToMe: false })}
+                                onClick={() => setFilters({
+                                    status: undefined,
+                                    priority: undefined,
+                                    assignedToMe: false,
+                                    assignedToUser: undefined,
+                                    hasSubtasks: false,
+                                    overdue: false,
+                                    dueSoon: false
+                                })}
                                 className="btn btn-ghost text-sm flex-shrink-0"
                             >
                                 Clear filters

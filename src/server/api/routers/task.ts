@@ -15,6 +15,10 @@ export const taskRouter = createTRPCRouter({
           .optional(),
         priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
         assignedToMe: z.boolean().optional(),
+        assignedToUser: z.string().optional(),
+        hasSubtasks: z.boolean().optional(),
+        overdue: z.boolean().optional(),
+        dueSoon: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -63,6 +67,43 @@ export const taskRouter = createTRPCRouter({
           some: {
             userId: ctx.session.user.id,
           },
+        };
+      }
+
+      if (input.assignedToUser) {
+        where.assignments = {
+          some: {
+            userId: input.assignedToUser,
+          },
+        };
+      }
+
+      if (input.hasSubtasks) {
+        where.subTasks = {
+          some: {},
+        };
+      }
+
+      if (input.overdue) {
+        where.dueDate = {
+          lt: new Date(),
+        };
+        where.status = {
+          not: "COMPLETED",
+        };
+      }
+
+      if (input.dueSoon) {
+        const now = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(now.getDate() + 7);
+
+        where.dueDate = {
+          gte: now,
+          lte: nextWeek,
+        };
+        where.status = {
+          not: "COMPLETED",
         };
       }
 

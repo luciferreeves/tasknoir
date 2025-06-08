@@ -4,6 +4,7 @@ import { taskRouter } from "~/server/api/routers/task";
 import { categoriesTagsRouter } from "./routers/categories-tags";
 import { userRouter } from "~/server/api/routers/user";
 import { milestoneRouter } from "~/server/api/routers/milestone";
+import { dashboardRouter } from "~/server/api/routers/dashboard";
 
 /**
  * This is the primary router for your server.
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
   categoriesTags: categoriesTagsRouter,
   user: userRouter,
   milestone: milestoneRouter,
+  dashboard: dashboardRouter,
 });
 
 // export type definition of API
