@@ -50,8 +50,8 @@ export function getSupabaseAdmin() {
   return supabaseAdmin;
 }
 
-// Storage bucket name for avatars/profile images
-export const STORAGE_BUCKET = "avatars";
+// Storage bucket name for file uploads
+export const STORAGE_BUCKET = "task-files";
 
 // Utility function to extract filename from Supabase URL
 export function extractFilenameFromUrl(url: string): string | null {

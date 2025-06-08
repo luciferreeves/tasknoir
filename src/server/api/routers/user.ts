@@ -312,4 +312,133 @@ export const userRouter = createTRPCRouter({
 
       return users;
     }),
+
+  // Search users for mentions
+  searchUsers: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().min(1, "Search query is required"),
+        projectId: z.string().optional(),
+        limit: z.number().min(1).max(20).default(10),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // If projectId is provided, search only within project members
+      if (input.projectId) {
+        // Check if user has access to this project
+        const project = await ctx.db.project.findFirst({
+          where: {
+            id: input.projectId,
+            OR: [
+              { ownerId: ctx.session.user.id },
+              { members: { some: { userId: ctx.session.user.id } } },
+            ],
+          },
+        });
+
+        if (!project) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You do not have access to this project",
+          });
+        }
+
+        // Search project members
+        const users = await ctx.db.user.findMany({
+          where: {
+            OR: [
+              { id: project.ownerId },
+              {
+                projectMembers: {
+                  some: { projectId: input.projectId },
+                },
+              },
+            ],
+            AND: [
+              {
+                OR: [
+                  { name: { contains: input.query, mode: "insensitive" } },
+                  { email: { contains: input.query, mode: "insensitive" } },
+                ],
+              },
+              { id: { not: ctx.session.user.id } }, // Exclude current user
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+          take: input.limit,
+          orderBy: [{ name: "asc" }, { email: "asc" }],
+        });
+
+        return users;
+      }
+
+      // General search for users the current user can mention
+      const users = await ctx.db.user.findMany({
+        where: {
+          OR: [
+            { name: { contains: input.query, mode: "insensitive" } },
+            { email: { contains: input.query, mode: "insensitive" } },
+          ],
+          AND: [
+            { id: { not: ctx.session.user.id } }, // Exclude current user
+            // Only include users the current user has access to
+            {
+              OR: [
+                // Members of projects owned by current user
+                {
+                  projectMembers: {
+                    some: {
+                      project: {
+                        ownerId: ctx.session.user.id,
+                      },
+                    },
+                  },
+                },
+                // Members of projects where current user is also a member
+                {
+                  projectMembers: {
+                    some: {
+                      project: {
+                        members: {
+                          some: {
+                            userId: ctx.session.user.id,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                // Owners of projects where current user is a member
+                {
+                  ownedProjects: {
+                    some: {
+                      members: {
+                        some: {
+                          userId: ctx.session.user.id,
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+        take: input.limit,
+        orderBy: [{ name: "asc" }, { email: "asc" }],
+      });
+
+      return users;
+    }),
 });

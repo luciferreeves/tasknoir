@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api } from "~/utils/api";
 import Loading from "~/components/Loading";
 import Navbar from "~/components/Navbar";
+import WysiwygEditor from "~/components/WysiwygEditor";
 
 interface ProjectType {
     id: string;
@@ -148,13 +149,11 @@ const NewTaskPage: NextPage = () => {
                                         <label htmlFor="description" className="label">
                                             Description
                                         </label>
-                                        <textarea
-                                            id="description"
-                                            rows={4}
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            className="textarea"
-                                            placeholder="Describe the task requirements and objectives"
+                                        <WysiwygEditor
+                                            content={formData.description}
+                                            onChange={(value) => setFormData({ ...formData, description: value })}
+                                            placeholder="Describe the task requirements and objectives..."
+                                            height={200}
                                         />
                                     </div>
 

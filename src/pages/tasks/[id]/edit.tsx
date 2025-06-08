@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api } from "~/utils/api";
 import Loading from "~/components/Loading";
 import Navbar from "~/components/Navbar";
+import WysiwygEditor from "~/components/WysiwygEditor";
 
 type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "COMPLETED";
@@ -16,6 +17,21 @@ interface UserType {
     email: string;
     image?: string | null;
     role: string;
+}
+
+interface TaskAssignmentType {
+    id: string;
+    user: UserType;
+}
+
+interface TaskType {
+    id: string;
+    title: string;
+    description: string | null;
+    dueDate: Date | null;
+    priority: TaskPriority;
+    status: TaskStatus;
+    assignments: TaskAssignmentType[];
 }
 
 const EditTaskPage: NextPage = () => {
@@ -45,7 +61,7 @@ const EditTaskPage: NextPage = () => {
     const { data: task, isLoading } = api.task.getById.useQuery(
         { id: taskId },
         { enabled: !!taskId && status === "authenticated" }
-    );
+    ) as { data: TaskType | undefined; isLoading: boolean };
 
     // Get available users - project members + admins
     const { data: users, isLoading: usersLoading } = api.user.getAll.useQuery(
@@ -82,7 +98,7 @@ const EditTaskPage: NextPage = () => {
                 priority: task.priority,
                 status: task.status,
                 dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0]! : "",
-                assigneeIds: task.assignments?.map(a => a.user.id) ?? [],
+                assigneeIds: task.assignments?.map(assignment => assignment.user.id) ?? [],
             });
         }
     }, [task]);
@@ -186,13 +202,11 @@ const EditTaskPage: NextPage = () => {
                                 <label htmlFor="description" className="label">
                                     Description
                                 </label>
-                                <textarea
-                                    id="description"
-                                    rows={4}
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="textarea"
-                                    placeholder="Describe the task requirements and details"
+                                <WysiwygEditor
+                                    content={formData.description}
+                                    onChange={(value) => setFormData({ ...formData, description: value })}
+                                    placeholder="Describe the task requirements and details..."
+                                    height={200}
                                 />
                             </div>
 

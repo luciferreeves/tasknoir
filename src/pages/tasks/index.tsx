@@ -6,6 +6,7 @@ import Link from "next/link";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
 import UserAvatar from "~/components/UserAvatar";
+import HtmlPreview from "~/components/HtmlPreview";
 import { api } from "~/utils/api";
 
 // Type definitions based on actual Prisma schema
@@ -232,9 +233,12 @@ export default function Tasks() {
                                                     </div>
 
                                                     {task.description && (
-                                                        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                                                            {task.description}
-                                                        </p>
+                                                        <HtmlPreview
+                                                            content={task.description}
+                                                            className="text-muted-foreground text-sm mb-3 line-clamp-2"
+                                                            maxLength={150}
+                                                            stripHtml={true}
+                                                        />
                                                     )}
                                                 </div>
                                             </div>

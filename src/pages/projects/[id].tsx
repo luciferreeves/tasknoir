@@ -8,6 +8,7 @@ import { api } from "~/utils/api";
 import Loading from "~/components/Loading";
 import Navbar from "~/components/Navbar";
 import UserAvatar from "~/components/UserAvatar";
+import HtmlPreview from "~/components/HtmlPreview";
 
 // Type definitions for milestones
 interface MilestoneType {
@@ -399,7 +400,12 @@ const ProjectDetailPage: NextPage = () => {
                                                         </div>
                                                     </div>
                                                     {task.description && (
-                                                        <p className="text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
+                                                        <HtmlPreview
+                                                            content={task.description}
+                                                            className="text-muted-foreground mb-3 line-clamp-2"
+                                                            maxLength={150}
+                                                            stripHtml={true}
+                                                        />
                                                     )}
                                                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                                                         <div className="flex items-center space-x-4">

@@ -188,19 +188,10 @@ export const taskRouter = createTRPCRouter({
             },
           },
           subTasks: {
-            include: {
-              assignments: {
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                      image: true,
-                    },
-                  },
-                },
-              },
+            select: {
+              id: true,
+              title: true,
+              status: true,
             },
             orderBy: {
               createdAt: "asc",
@@ -223,10 +214,10 @@ export const taskRouter = createTRPCRouter({
           },
           attachments: {
             orderBy: {
-              uploadedAt: "desc", // Changed from createdAt to uploadedAt
+              uploadedAt: "desc",
             },
           },
-          activities: {
+          timeEntries: {
             include: {
               user: {
                 select: {
@@ -238,10 +229,9 @@ export const taskRouter = createTRPCRouter({
               },
             },
             orderBy: {
-              createdAt: "desc",
+              startTime: "desc",
             },
           },
-          timeEntries: true, // Removed user include since it doesn't exist in schema
         },
       });
 
@@ -708,6 +698,128 @@ export const taskRouter = createTRPCRouter({
       return comment;
     }),
 
+  // Update a comment
+  updateComment: protectedProcedure
+    .input(
+      z.object({
+        commentId: z.string(),
+        content: z.string().min(1, "Comment content is required"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if comment exists and user owns it
+      const comment = await ctx.db.taskComment.findFirst({
+        where: {
+          id: input.commentId,
+          userId: ctx.session.user.id, // Only allow users to edit their own comments
+        },
+        include: {
+          task: {
+            include: {
+              project: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      if (!comment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found or you do not have permission to edit it",
+        });
+      }
+
+      const updatedComment = await ctx.db.taskComment.update({
+        where: { id: input.commentId },
+        data: { content: input.content },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      });
+
+      // Create activity log
+      await ctx.db.taskActivity.create({
+        data: {
+          taskId: comment.task.id,
+          userId: ctx.session.user.id,
+          action: "COMMENT_UPDATED",
+          description: "Updated a comment",
+        },
+      });
+
+      return updatedComment;
+    }),
+
+  // Delete a comment
+  deleteComment: protectedProcedure
+    .input(z.object({ commentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if comment exists and user owns it or is admin/project owner
+      const comment = await ctx.db.taskComment.findFirst({
+        where: {
+          id: input.commentId,
+        },
+        include: {
+          task: {
+            include: {
+              project: true,
+            },
+          },
+        },
+      });
+
+      if (!comment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found",
+        });
+      }
+
+      // Check permissions: user owns the comment, is project owner, or is admin
+      const canDelete =
+        comment.userId === ctx.session.user.id ||
+        comment.task.project?.ownerId === ctx.session.user.id ||
+        isAdmin(ctx.session);
+
+      if (!canDelete) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this comment",
+        });
+      }
+
+      await ctx.db.taskComment.delete({
+        where: { id: input.commentId },
+      });
+
+      // Create activity log
+      await ctx.db.taskActivity.create({
+        data: {
+          taskId: comment.task.id,
+          userId: ctx.session.user.id,
+          action: "COMMENT_DELETED",
+          description: "Deleted a comment",
+        },
+      });
+
+      return { success: true };
+    }),
+
   // Start time tracking for a task
   startTimeTracking: protectedProcedure
     .input(
@@ -758,6 +870,7 @@ export const taskRouter = createTRPCRouter({
       const activeEntry = await ctx.db.taskTimeEntry.findFirst({
         where: {
           taskId: input.taskId,
+          userId: ctx.session.user.id,
           endTime: null,
         },
       });
@@ -772,6 +885,7 @@ export const taskRouter = createTRPCRouter({
       const timeEntry = await ctx.db.taskTimeEntry.create({
         data: {
           taskId: input.taskId,
+          userId: ctx.session.user.id,
           description: input.description,
           startTime: new Date(),
         },
@@ -787,6 +901,7 @@ export const taskRouter = createTRPCRouter({
       const activeEntry = await ctx.db.taskTimeEntry.findFirst({
         where: {
           taskId: input.taskId,
+          userId: ctx.session.user.id,
           endTime: null,
         },
       });
@@ -812,5 +927,149 @@ export const taskRouter = createTRPCRouter({
       });
 
       return timeEntry;
+    }),
+
+  // Add attachment to a task
+  addAttachment: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        filename: z.string(),
+        fileUrl: z.string(),
+        fileSize: z.number().optional(),
+        mimeType: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const task = await ctx.db.task.findFirst({
+        where: {
+          id: input.taskId,
+          OR: [
+            {
+              project: {
+                ownerId: ctx.session.user.id,
+              },
+            },
+            {
+              project: {
+                members: {
+                  some: {
+                    userId: ctx.session.user.id,
+                  },
+                },
+              },
+            },
+            {
+              assignments: {
+                some: {
+                  userId: ctx.session.user.id,
+                },
+              },
+            },
+          ],
+        },
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Task not found or you do not have access to it",
+        });
+      }
+
+      const attachment = await ctx.db.taskAttachment.create({
+        data: {
+          taskId: input.taskId,
+          filename: input.filename,
+          fileUrl: input.fileUrl,
+          fileSize: input.fileSize,
+          mimeType: input.mimeType,
+        },
+      });
+
+      // Create activity log
+      await ctx.db.taskActivity.create({
+        data: {
+          taskId: input.taskId,
+          userId: ctx.session.user.id,
+          action: "ATTACHMENT_ADDED",
+          description: `Added attachment "${input.filename}"`,
+        },
+      });
+
+      return attachment;
+    }),
+
+  // Remove attachment from a task
+  removeAttachment: protectedProcedure
+    .input(
+      z.object({
+        attachmentId: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get attachment with task info to check permissions
+      const attachment = await ctx.db.taskAttachment.findFirst({
+        where: { id: input.attachmentId },
+        include: {
+          task: {
+            include: {
+              project: true,
+              assignments: true,
+            },
+          },
+        },
+      });
+
+      if (!attachment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Attachment not found",
+        });
+      }
+
+      // Check if user has access to the task
+      const isMember = attachment.task.projectId
+        ? await ctx.db.projectMember.findFirst({
+            where: {
+              projectId: attachment.task.projectId,
+              userId: ctx.session.user.id,
+            },
+          })
+        : null;
+
+      const isAssignee = attachment.task.assignments.some(
+        (assignment) => assignment.userId === ctx.session.user.id,
+      );
+
+      const hasAccess =
+        attachment.task.project?.ownerId === ctx.session.user.id ||
+        !!isMember ||
+        isAssignee ||
+        isAdmin(ctx.session);
+
+      if (!hasAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to remove this attachment",
+        });
+      }
+
+      await ctx.db.taskAttachment.delete({
+        where: { id: input.attachmentId },
+      });
+
+      // Create activity log
+      await ctx.db.taskActivity.create({
+        data: {
+          taskId: attachment.task.id,
+          userId: ctx.session.user.id,
+          action: "ATTACHMENT_REMOVED",
+          description: `Removed attachment "${attachment.filename}"`,
+        },
+      });
+
+      return { success: true };
     }),
 });
