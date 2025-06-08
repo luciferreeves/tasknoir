@@ -1,8 +1,8 @@
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
+import UserAvatar from "./UserAvatar";
 
 export default function Navbar() {
     const { data: session } = useSession();
@@ -57,21 +57,21 @@ export default function Navbar() {
                     <div className="flex items-center space-x-4">
                         <ThemeToggle />
 
-                        <div className="flex items-center space-x-3">
-                            <Link href="/profile" className="flex items-center space-x-2 hover:bg-accent/50 px-3 py-2 rounded-md transition-colors">
-                                {session.user?.image && (
-                                    <Image
-                                        className="h-8 w-8 rounded-full object-cover"
-                                        src={session.user.image}
-                                        alt="Profile"
-                                        width={32}
-                                        height={32}
-                                    />
-                                )}
-                                <span className="text-sm font-medium text-foreground hidden sm:block">
-                                    {session.user?.name}
-                                </span>
-                            </Link>
+                        <div className="flex items-center">
+                            <div className="hover:bg-accent/50 px-3 py-2 rounded-md transition-colors flex items-center">
+                                <UserAvatar
+                                    user={{
+                                        id: session.user.id,
+                                        name: session.user.name ?? '',
+                                        email: session.user.email ?? '',
+                                        image: session.user.image ?? null
+                                    }}
+                                    size="sm"
+                                    clickable={true}
+                                    showName={true}
+                                    href="/profile"
+                                />
+                            </div>
 
                             <button
                                 onClick={handleSignOut}

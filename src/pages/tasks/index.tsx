@@ -5,6 +5,7 @@ import Head from "next/head";
 import Link from "next/link";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
+import UserAvatar from "~/components/UserAvatar";
 import { api } from "~/utils/api";
 
 // Type definitions based on actual Prisma schema
@@ -15,6 +16,7 @@ interface TaskUser {
     id: string;
     name: string;
     email: string;
+    image?: string | null;
 }
 
 interface TaskProject {
@@ -252,13 +254,13 @@ export default function Tasks() {
 
                                                 <div className="flex gap-1">
                                                     {task.assignments?.slice(0, 3).map((assignment) => (
-                                                        <div
+                                                        <UserAvatar
                                                             key={assignment.id}
-                                                            className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs"
-                                                            title={assignment.user.name}
-                                                        >
-                                                            {assignment.user.name.charAt(0).toUpperCase()}
-                                                        </div>
+                                                            user={assignment.user}
+                                                            size="sm"
+                                                            clickable={true}
+                                                            showName={false}
+                                                        />
                                                     ))}
                                                     {task.assignments && task.assignments.length > 3 && (
                                                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">

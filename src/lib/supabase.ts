@@ -12,16 +12,13 @@ export function getSupabaseClient() {
   }
 
   if (!supabaseClient) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const supabaseAnonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error("Supabase environment variables are not configured");
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
   }
 
@@ -36,16 +33,13 @@ export function getSupabaseAdmin() {
     return supabaseAdmin;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error("Supabase admin environment variables are not configured");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,

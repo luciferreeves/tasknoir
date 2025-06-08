@@ -3,9 +3,9 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import Image from "next/image";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
+import UserAvatar from "~/components/UserAvatar";
 
 export default function Dashboard() {
     const { data: session, status } = useSession();
@@ -110,27 +110,43 @@ export default function Dashboard() {
                                     </div>
                                     <h3 className="text-xl font-semibold text-foreground">Profile</h3>
                                 </div>
-                                <div className="space-y-4">
-                                    {session.user?.image && (
-                                        <div className="flex justify-center">
-                                            <Image
-                                                className="h-16 w-16 rounded-full border-2 border-border shadow-sm object-cover"
-                                                src={session.user.image}
-                                                alt="Profile"
-                                                width={64}
-                                                height={64}
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="space-y-3">
-                                        <div className="p-3 rounded-lg bg-muted/30">
+                                <div className="flex items-start space-x-4">
+                                    {/* Profile Image on Left */}
+                                    <div className="flex-shrink-0">
+                                        <UserAvatar
+                                            user={{
+                                                id: session.user.id,
+                                                name: session.user.name ?? '',
+                                                email: session.user.email ?? '',
+                                                image: session.user.image ?? null
+                                            }}
+                                            size="xl"
+                                            clickable={true}
+                                            showName={false}
+                                        />
+                                    </div>
+                                    {/* Profile Details on Right */}
+                                    <div className="flex-1">
+                                        <div className="py-2 rounded-lg bg-muted/30">
                                             <span className="block text-sm text-muted-foreground font-medium mb-1">Name</span>
                                             <span className="font-medium text-foreground">{session.user.name}</span>
                                         </div>
-                                        <div className="p-3 rounded-lg bg-muted/30">
+                                        <div className="py-2 rounded-lg bg-muted/30">
                                             <span className="block text-sm text-muted-foreground font-medium mb-1">Email</span>
                                             <span className="font-medium text-foreground text-sm">{session.user.email}</span>
                                         </div>
+                                        <div className="py-2 rounded-lg bg-muted/30">
+                                            <span className="block text-sm text-muted-foreground font-medium mb-1">Bio</span>
+                                            <span className="text-foreground text-sm">
+                                                {session.user.bio ?? "No bio added yet"}
+                                            </span>
+                                        </div>
+                                        <Link href="/profile" className="inline-flex items-center text-sm text-primary hover:text-primary/80 transition-colors">
+                                            Edit Profile
+                                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

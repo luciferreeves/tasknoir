@@ -3,10 +3,10 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
-import Image from "next/image";
 import { api } from "~/utils/api";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
+import UserAvatar from "~/components/UserAvatar";
 
 export default function Profile() {
     const { data: session, status } = useSession();
@@ -130,21 +130,18 @@ export default function Profile() {
                                 <div className="card p-6 space-y-6">
                                     <div className="text-center">
                                         <div className="relative inline-block">
-                                            <div className="w-32 h-32 mx-auto bg-primary rounded-full flex items-center justify-center overflow-hidden">
-                                                {profile.image ? (
-                                                    <Image
-                                                        src={profile.image}
-                                                        alt="Profile"
-                                                        className="w-full h-full object-cover"
-                                                        width={128}
-                                                        height={128}
-                                                    />
-                                                ) : (
-                                                    <span className="text-4xl font-bold text-primary-foreground">
-                                                        {profile.name.charAt(0).toUpperCase()}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <UserAvatar
+                                                user={{
+                                                    id: profile.id,
+                                                    name: profile.name,
+                                                    email: profile.email,
+                                                    image: profile.image
+                                                }}
+                                                size="xxl"
+                                                clickable={false}
+                                                showName={false}
+                                                className="mx-auto"
+                                            />
                                             {isEditing && (
                                                 <button
                                                     onClick={() => fileInputRef.current?.click()}

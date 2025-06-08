@@ -5,6 +5,7 @@ import Head from "next/head";
 import Link from "next/link";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
+import UserAvatar from "~/components/UserAvatar";
 import { api } from "~/utils/api";
 
 export default function Projects() {
@@ -96,20 +97,14 @@ export default function Projects() {
                                                     {project.title}
                                                 </h3>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {project.members.slice(0, 3).map((member) => (
-                                                        <div
-                                                            key={member.id}
-                                                            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium"
-                                                            title={member.user.name}
-                                                        >
-                                                            {member.user.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                    ))}
-                                                    {project.members.length > 3 && (
-                                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                                                            +{project.members.length - 3}
-                                                        </div>
-                                                    )}
+                                                    {/* Show project owner only */}
+                                                    <UserAvatar
+                                                        user={project.owner}
+                                                        size="sm"
+                                                        clickable={true}
+                                                        showName={false}
+                                                        title={`Project Owner: ${project.owner.name ?? project.owner.email}`}
+                                                    />
                                                 </div>
                                             </div>
 
@@ -135,11 +130,11 @@ export default function Projects() {
                                                 <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
                                                     <div
                                                         className={`h-3 rounded-full transition-all duration-500 ease-out ${progress === 0 ? 'w-0 bg-muted' :
-                                                                progress >= 80 ? 'bg-gradient-to-r from-green-500 to-green-400' :
-                                                                    progress >= 60 ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
-                                                                        progress >= 40 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
-                                                                            progress >= 20 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
-                                                                                'bg-gradient-to-r from-red-500 to-red-400'
+                                                            progress >= 80 ? 'bg-gradient-to-r from-green-500 to-green-400' :
+                                                                progress >= 60 ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
+                                                                    progress >= 40 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
+                                                                        progress >= 20 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
+                                                                            'bg-gradient-to-r from-red-500 to-red-400'
                                                             }`}
                                                         style={{ width: `${progress}%` }}
                                                     ></div>

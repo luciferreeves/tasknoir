@@ -6,12 +6,14 @@ import Head from "next/head";
 import { api } from "~/utils/api";
 import Loading from "~/components/Loading";
 import Navbar from "~/components/Navbar";
+import UserAvatar from "~/components/UserAvatar";
 
 // Type definitions based on actual Prisma schema
 interface UserType {
     id: string;
     name: string;
     email: string;
+    image?: string | null;
 }
 
 interface ProjectType {
@@ -278,9 +280,17 @@ const TaskDetailPage: NextPage = () => {
                                             {task.comments.map((comment) => (
                                                 <div key={comment.id} className="border-l-4 border-primary/30 pl-4">
                                                     <div className="flex items-center justify-between mb-2">
-                                                        <span className="font-medium text-foreground">
-                                                            {comment.author.name ?? comment.author.email}
-                                                        </span>
+                                                        <UserAvatar
+                                                            user={{
+                                                                id: comment.author.id,
+                                                                name: comment.author.name,
+                                                                email: comment.author.email,
+                                                                image: comment.author.image
+                                                            }}
+                                                            size="sm"
+                                                            clickable={true}
+                                                            showName={true}
+                                                        />
                                                         <span className="text-sm text-muted-foreground">
                                                             {formatDate(comment.createdAt)}
                                                         </span>
@@ -346,10 +356,18 @@ const TaskDetailPage: NextPage = () => {
                                             {task.timeEntries.map((entry) => (
                                                 <div key={entry.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                                                     <div>
-                                                        <p className="font-medium text-foreground">
-                                                            {entry.user.name ?? entry.user.email}
-                                                        </p>
-                                                        <p className="text-sm text-muted-foreground">
+                                                        <UserAvatar
+                                                            user={{
+                                                                id: entry.user.id,
+                                                                name: entry.user.name,
+                                                                email: entry.user.email,
+                                                                image: entry.user.image
+                                                            }}
+                                                            size="sm"
+                                                            clickable={true}
+                                                            showName={true}
+                                                        />
+                                                        <p className="text-sm text-muted-foreground mt-2">
                                                             {formatDate(entry.startTime)} - {entry.endTime ? formatDate(entry.endTime) : 'In Progress'}
                                                         </p>
                                                         {entry.description && (
@@ -384,14 +402,13 @@ const TaskDetailPage: NextPage = () => {
                                         {task.assignments && task.assignments.length > 0 ? (
                                             <div className="space-y-2">
                                                 {task.assignments.map((assignment) => (
-                                                    <div key={assignment.id} className="flex items-center space-x-2">
-                                                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium">
-                                                            {(assignment.user.name ?? assignment.user.email).charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <p className="text-foreground">
-                                                            {assignment.user.name ?? assignment.user.email}
-                                                        </p>
-                                                    </div>
+                                                    <UserAvatar
+                                                        key={assignment.id}
+                                                        user={assignment.user}
+                                                        size="sm"
+                                                        clickable={true}
+                                                        showName={true}
+                                                    />
                                                 ))}
                                             </div>
                                         ) : (
@@ -400,7 +417,21 @@ const TaskDetailPage: NextPage = () => {
                                     </div>
                                     <div>
                                         <span className="text-sm font-medium text-muted-foreground">Creator</span>
-                                        <p className="text-foreground">{task.user?.name ?? task.user?.email ?? 'Unknown'}</p>
+                                        {task.user ? (
+                                            <UserAvatar
+                                                user={{
+                                                    id: task.user.id,
+                                                    name: task.user.name,
+                                                    email: task.user.email,
+                                                    image: task.user.image
+                                                }}
+                                                size="sm"
+                                                clickable={true}
+                                                showName={true}
+                                            />
+                                        ) : (
+                                            <p className="text-foreground">Unknown</p>
+                                        )}
                                     </div>
                                     {task.project && (
                                         <div>

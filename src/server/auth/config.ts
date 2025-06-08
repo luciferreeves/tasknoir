@@ -28,6 +28,8 @@ declare module "next-auth" {
     user: {
       id: string;
       role: "USER" | "ADMIN";
+      image?: string | null;
+      bio?: string | null;
       // ...other properties
     } & DefaultSession["user"];
   }
@@ -37,6 +39,8 @@ declare module "next-auth" {
     email: string;
     name: string;
     role: "USER" | "ADMIN";
+    image?: string | null;
+    bio?: string | null;
   }
 }
 
@@ -44,6 +48,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     role?: "USER" | "ADMIN";
+    image?: string | null;
+    bio?: string | null;
   }
 }
 
@@ -104,6 +110,8 @@ export const authOptions: NextAuthOptions = {
               name: true,
               password: true,
               role: true,
+              image: true,
+              bio: true,
             },
           });
           console.log("User lookup complete for:", email);
@@ -127,6 +135,8 @@ export const authOptions: NextAuthOptions = {
             email: user.email ?? "",
             name: user.name,
             role: user.role,
+            image: user.image,
+            bio: user.bio,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -136,17 +146,51 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt: ({ token, user }) => {
+    jwt: async ({ token, user }) => {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.image = user.image;
+        token.bio = user.bio;
       }
+
+      // Always fetch latest user data to ensure profile changes are reflected
+      if (token.id) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              image: true,
+              bio: true,
+            },
+          });
+
+          if (dbUser) {
+            token.name = dbUser.name;
+            token.email = dbUser.email;
+            token.role = dbUser.role;
+            token.image = dbUser.image;
+            token.bio = dbUser.bio;
+          }
+        } catch (error) {
+          console.error("Error fetching user data in JWT callback:", error);
+        }
+      }
+
       return token;
     },
     session: ({ session, token }) => {
       if (session.user && token.id) {
         session.user.id = token.id;
         session.user.role = token.role ?? "USER";
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.image;
+        session.user.bio = token.bio;
       }
       return session;
     },

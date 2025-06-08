@@ -57,7 +57,6 @@ export default async function handler(
     await ensureBucketExists();
 
     // Parse the incoming form data
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const form = new IncomingForm({
       keepExtensions: true,
       maxFileSize: 5 * 1024 * 1024, // 5MB
@@ -66,7 +65,7 @@ export default async function handler(
     // Parse with proper error handling
     const [, files] = await new Promise<[unknown, Record<string, unknown>]>(
       (resolve, reject) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         form.parse(req, (err: any, fields: any, parsedFiles: any) => {
           if (err) {
             reject(new Error(String(err)));

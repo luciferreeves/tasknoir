@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Image from "next/image";
+import Link from "next/link";
 import { api } from "~/utils/api";
 import Navbar from "~/components/Navbar";
 import Loading from "~/components/Loading";
+import UserAvatar from "~/components/UserAvatar";
 
 interface UserWithCounts {
     id: string;
@@ -155,22 +156,22 @@ export default function AdminUsers() {
                                             <tr key={user.id} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
-                                                        <div className="flex-shrink-0 h-10 w-10">
-                                                            <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center overflow-hidden">
-                                                                {user.image ? (
-                                                                    <Image
-                                                                        className="h-10 w-10 rounded-full object-cover"
-                                                                        src={user.image}
-                                                                        alt=""
-                                                                        width={40}
-                                                                        height={40}
-                                                                    />
-                                                                ) : (
-                                                                    <span className="text-sm font-medium text-primary-foreground">
-                                                                        {user.name.charAt(0).toUpperCase()}
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                        <div className="flex-shrink-0">
+                                                            {editingUser === user.id ? (
+                                                                <UserAvatar
+                                                                    user={user}
+                                                                    size="md"
+                                                                    clickable={false}
+                                                                    showName={false}
+                                                                />
+                                                            ) : (
+                                                                <UserAvatar
+                                                                    user={user}
+                                                                    size="md"
+                                                                    clickable={true}
+                                                                    showName={false}
+                                                                />
+                                                            )}
                                                         </div>
                                                         <div className="ml-4">
                                                             <div className="text-sm font-medium text-foreground">
@@ -183,7 +184,12 @@ export default function AdminUsers() {
                                                                     placeholder="User name"
                                                                 />
                                                                 ) : (
-                                                                    user.name
+                                                                    <Link
+                                                                        href={`/profile/${user.id}`}
+                                                                        className="hover:text-primary transition-colors"
+                                                                    >
+                                                                        {user.name}
+                                                                    </Link>
                                                                 )}
                                                             </div>
                                                             <div className="text-sm text-muted-foreground">
