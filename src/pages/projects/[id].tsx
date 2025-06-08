@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "~/utils/api";
 import Loading from "~/components/Loading";
 import Navbar from "~/components/Navbar";
@@ -43,6 +43,9 @@ const ProjectDetailPage: NextPage = () => {
         dueDate: "",
     });
 
+    // State for task hierarchy - pre-collapsed on project page
+    const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
+
     const projectQuery = api.project.getById.useQuery(
         { id: id as string },
         { enabled: !!id && status === "authenticated" }
@@ -58,6 +61,65 @@ const ProjectDetailPage: NextPage = () => {
     );
 
     const projectTasks = tasksQuery.data;
+
+    // Organize tasks into parent-child relationships
+    const organizedTasks = () => {
+        if (!projectTasks) return [];
+
+        const parentTasks: typeof projectTasks = [];
+        const subtasksByParent: Record<string, typeof projectTasks> = {};
+
+        // Separate parent tasks and subtasks
+        projectTasks.forEach(task => {
+            if (task.parentTask) {
+                subtasksByParent[task.parentTask.id] ??= [];
+                subtasksByParent[task.parentTask.id]!.push(task);
+            } else {
+                parentTasks.push(task);
+            }
+        });
+
+        // Create organized list with parent tasks followed by their subtasks
+        const organized: (typeof projectTasks[0] & { isSubtask?: boolean; parentId?: string })[] = [];
+
+        parentTasks.forEach(parentTask => {
+            organized.push(parentTask);
+
+            if (subtasksByParent[parentTask.id] && !collapsedParents.has(parentTask.id)) {
+                subtasksByParent[parentTask.id]!.forEach(subtask => {
+                    organized.push({ ...subtask, isSubtask: true, parentId: parentTask.id });
+                });
+            }
+        });
+
+        return organized;
+    };
+
+    const toggleParentCollapse = (parentId: string) => {
+        setCollapsedParents(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(parentId)) {
+                newSet.delete(parentId);
+            } else {
+                newSet.add(parentId);
+            }
+            return newSet;
+        });
+    };
+
+    // Pre-collapse all parent tasks when data loads
+    useEffect(() => {
+        if (projectTasks) {
+            const parentTaskIds = projectTasks
+                .filter(task => !task.parentTask)
+                .filter(task => projectTasks.some(t => t.parentTask?.id === task.id))
+                .map(task => task.id);
+
+            if (parentTaskIds.length > 0) {
+                setCollapsedParents(new Set(parentTaskIds));
+            }
+        }
+    }, [projectTasks]);
 
     // Milestone queries
     const milestonesQuery = api.milestone.getByProjectId.useQuery(
@@ -381,53 +443,75 @@ const ProjectDetailPage: NextPage = () => {
                                 <div className="p-6">
                                     {projectTasks && projectTasks.length > 0 ? (
                                         <div className="space-y-4">
-                                            {projectTasks.map((task) => (
-                                                <div key={task.id} className="card border hover-lift transition-all p-4">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <Link
-                                                            href={`/tasks/${task.id}`}
-                                                            className="text-lg font-medium text-foreground hover:text-primary"
-                                                        >
-                                                            {task.title}
-                                                        </Link>
-                                                        <div className="flex space-x-2">
-                                                            <span className={getTaskStatusColor(task.status)}>
-                                                                {task.status.replace('_', ' ')}
-                                                            </span>
-                                                            <span className={getPriorityColor(task.priority)}>
-                                                                {task.priority}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    {task.description && (
-                                                        <HtmlPreview
-                                                            content={task.description}
-                                                            className="text-muted-foreground mb-3 line-clamp-2"
-                                                            maxLength={150}
-                                                            stripHtml={true}
-                                                        />
-                                                    )}
-                                                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                        <div className="flex items-center space-x-4">
-                                                            {task.assignments && task.assignments.length > 0 && (
-                                                                <div className="flex items-center space-x-2">
-                                                                    <span>Assigned to:</span>
-                                                                    <UserAvatar
-                                                                        user={task.assignments[0]!.user}
-                                                                        size="sm"
-                                                                        clickable={true}
-                                                                        showName={true}
-                                                                    />
+                                            {organizedTasks().map((task) => {
+                                                const hasSubtasks = !task.isSubtask && Boolean(task._count?.subTasks && task._count.subTasks > 0);
+                                                const isCollapsed = collapsedParents.has(task.id);
+
+                                                return (
+                                                    <div key={task.id} className={`relative ${task.isSubtask ? 'ml-8' : ''}`}>
+                                                        {/* Collapse/Expand button for parent tasks - positioned closer to task list area */}
+                                                        {hasSubtasks && task._count && task._count.subTasks > 0 && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    toggleParentCollapse(task.id);
+                                                                }}
+                                                                className="absolute -left-10 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background border border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors shadow-sm"
+                                                                aria-label={isCollapsed ? "Expand subtasks" : "Collapse subtasks"}
+                                                            >
+                                                                {isCollapsed ? "+" : "−"}
+                                                            </button>
+                                                        )}
+
+                                                        <div className={`card border hover-lift transition-all p-4 ${task.isSubtask ? '-mt-3 mb-1' : 'mb-4'} last:mb-0`}>
+                                                            <div className="flex items-start justify-between mb-2">
+                                                                <Link
+                                                                    href={`/tasks/${task.id}`}
+                                                                    className="text-lg font-medium text-foreground hover:text-primary"
+                                                                >
+                                                                    {task.title}
+                                                                </Link>
+                                                                <div className="flex space-x-2">
+                                                                    <span className={getTaskStatusColor(task.status)}>
+                                                                        {task.status.replace('_', ' ')}
+                                                                    </span>
+                                                                    <span className={getPriorityColor(task.priority)}>
+                                                                        {task.priority}
+                                                                    </span>
                                                                 </div>
+                                                            </div>
+                                                            {task.description && (
+                                                                <HtmlPreview
+                                                                    content={task.description}
+                                                                    className="text-muted-foreground mb-3 line-clamp-2"
+                                                                    maxLength={150}
+                                                                    stripHtml={true}
+                                                                />
                                                             )}
-                                                            {task.dueDate && (
-                                                                <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                                                            )}
+                                                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                                <div className="flex items-center space-x-4">
+                                                                    {task.assignments && task.assignments.length > 0 && (
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <span>Assigned to:</span>
+                                                                            <UserAvatar
+                                                                                user={task.assignments[0]!.user}
+                                                                                size="sm"
+                                                                                clickable={true}
+                                                                                showName={true}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {task.dueDate && (
+                                                                        <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                                                                    )}
+                                                                </div>
+                                                                <span>Updated: {new Date(task.updatedAt).toLocaleDateString()}</span>
+                                                            </div>
                                                         </div>
-                                                        <span>Updated: {new Date(task.updatedAt).toLocaleDateString()}</span>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     ) : (
                                         <div className="text-center py-8">
@@ -616,13 +700,13 @@ const ProjectDetailPage: NextPage = () => {
                                                                             {milestone.title}
                                                                         </h4>
                                                                         {milestone.description && (
-                                                                            <p className={`text-sm mt-1 ${milestone.completed ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                                                                            <p className={`text-sm mt-1 ${milestone.completed ? 'text-muted-foreground line-through' : 'text-muted-foreground'}`}>
                                                                                 {milestone.description}
                                                                             </p>
                                                                         )}
                                                                         {milestone.dueDate && (
                                                                             <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-2">
-                                                                                <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                                                                                <span className={`${milestone.completed ? 'text-muted-foreground line-through' : ''}`}>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
                                                                                 {new Date(milestone.dueDate) < new Date() && !milestone.completed && (
                                                                                     <span className="badge badge-destructive text-xs">Overdue</span>
                                                                                 )}

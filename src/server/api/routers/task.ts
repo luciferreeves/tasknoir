@@ -403,6 +403,7 @@ export const taskRouter = createTRPCRouter({
           .enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"])
           .optional(),
         dueDate: z.date().optional(),
+        parentTaskId: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -453,6 +454,31 @@ export const taskRouter = createTRPCRouter({
           code: "FORBIDDEN",
           message: "You do not have permission to update this task",
         });
+      }
+
+      // If parentTaskId is provided, validate it
+      if (input.parentTaskId) {
+        const parentTask = await ctx.db.task.findFirst({
+          where: {
+            id: input.parentTaskId,
+            projectId: existingTask.projectId,
+          },
+        });
+
+        if (!parentTask) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Parent task not found in this project",
+          });
+        }
+
+        // Prevent circular dependency
+        if (input.parentTaskId === input.id) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "A task cannot be its own parent",
+          });
+        }
       }
 
       const { id, ...updateData } = input;

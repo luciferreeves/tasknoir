@@ -21,6 +21,12 @@ interface UserType {
     role: string;
 }
 
+interface TaskType {
+    id: string;
+    title: string;
+    status: string;
+}
+
 const NewTaskPage: NextPage = () => {
     const router = useRouter();
     const { status } = useSession();
@@ -30,6 +36,7 @@ const NewTaskPage: NextPage = () => {
         title: "",
         description: "",
         projectId: projectId ?? "",
+        parentTaskId: "",
         priority: "MEDIUM" as const,
         status: "TODO" as const,
         dueDate: "",
@@ -56,6 +63,18 @@ const NewTaskPage: NextPage = () => {
     } = api.user.getAll.useQuery(undefined, {
         enabled: status === "authenticated",
     });
+
+    // Query potential parent tasks when a project is selected
+    const {
+        data: potentialParentTasks,
+        isLoading: parentTasksLoading
+    } = api.task.getAll.useQuery(
+        { projectId: formData.projectId },
+        {
+            enabled: status === "authenticated" && !!formData.projectId,
+            refetchOnWindowFocus: false,
+        }
+    );
 
     const createTaskMutation = api.task.create.useMutation({
         onSuccess: (data: unknown) => {
@@ -86,6 +105,7 @@ const NewTaskPage: NextPage = () => {
             title: formData.title,
             description: formData.description ?? undefined,
             projectId: formData.projectId,
+            parentTaskId: formData.parentTaskId || undefined,
             priority: formData.priority,
             status: formData.status,
             dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
@@ -101,6 +121,7 @@ const NewTaskPage: NextPage = () => {
 
     const projectsList = (projects as ProjectType[] | undefined) ?? [];
     const usersList = (users as UserType[] | undefined) ?? [];
+    const parentTasksList = (potentialParentTasks as TaskType[] | undefined) ?? [];
 
     return (
         <div className="min-h-screen bg-background">
@@ -166,7 +187,7 @@ const NewTaskPage: NextPage = () => {
                                             id="projectId"
                                             required
                                             value={formData.projectId}
-                                            onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, projectId: e.target.value, parentTaskId: "" })}
                                             className="select"
                                             aria-label="Select project"
                                         >
@@ -178,6 +199,38 @@ const NewTaskPage: NextPage = () => {
                                             ))}
                                         </select>
                                     </div>
+
+                                    {/* Parent Task Selection */}
+                                    {formData.projectId && (
+                                        <div>
+                                            <label htmlFor="parentTaskId" className="label">
+                                                Parent Task (Optional)
+                                            </label>
+                                            <select
+                                                id="parentTaskId"
+                                                value={formData.parentTaskId}
+                                                onChange={(e) => setFormData({ ...formData, parentTaskId: e.target.value })}
+                                                className="select"
+                                                aria-label="Select parent task"
+                                                disabled={parentTasksLoading}
+                                            >
+                                                <option value="">No parent task (create as main task)</option>
+                                                {!parentTasksLoading && parentTasksList
+                                                    .filter(task => task.status !== "COMPLETED") // Filter out completed tasks
+                                                    .map((task) => (
+                                                        <option key={task.id} value={task.id}>
+                                                            {task.title}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                            {parentTasksLoading && (
+                                                <p className="mt-1 text-xs text-muted-foreground">Loading available tasks...</p>
+                                            )}
+                                            {!parentTasksLoading && parentTasksList.length === 0 && (
+                                                <p className="mt-1 text-xs text-muted-foreground">No tasks available in this project yet</p>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Priority */}
                                     <div>

@@ -32,6 +32,12 @@ interface TaskType {
     priority: TaskPriority;
     status: TaskStatus;
     assignments: TaskAssignmentType[];
+    projectId?: string;
+    parentTaskId?: string | null;
+    parentTask?: {
+        id: string;
+        title: string;
+    } | null;
 }
 
 const EditTaskPage: NextPage = () => {
@@ -47,6 +53,7 @@ const EditTaskPage: NextPage = () => {
         status: TaskStatus;
         dueDate: string;
         assigneeIds: string[];
+        parentTaskId: string | null;
     }>({
         title: "",
         description: "",
@@ -54,6 +61,7 @@ const EditTaskPage: NextPage = () => {
         status: "TODO",
         dueDate: "",
         assigneeIds: [],
+        parentTaskId: null,
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +75,14 @@ const EditTaskPage: NextPage = () => {
     const { data: users, isLoading: usersLoading } = api.user.getAll.useQuery(
         undefined,
         { enabled: status === "authenticated" }
+    );
+
+    // Get potential parent tasks for the same project
+    const { data: potentialParentTasks } = api.task.getAll.useQuery(
+        { projectId: task?.projectId ?? "" },
+        {
+            enabled: !!task?.projectId && status === "authenticated",
+        }
     );
 
     const updateTaskMutation = api.task.update.useMutation({
@@ -99,6 +115,7 @@ const EditTaskPage: NextPage = () => {
                 status: task.status,
                 dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0]! : "",
                 assigneeIds: task.assignments?.map(assignment => assignment.user.id) ?? [],
+                parentTaskId: task.parentTaskId ?? null,
             });
         }
     }, [task]);
@@ -134,6 +151,7 @@ const EditTaskPage: NextPage = () => {
             priority: formData.priority,
             status: formData.status,
             dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+            parentTaskId: formData.parentTaskId ?? undefined,
         };
 
         try {
@@ -260,6 +278,36 @@ const EditTaskPage: NextPage = () => {
                                     className="input"
                                 />
                             </div>
+
+                            {/* Parent Task Selection */}
+                            {potentialParentTasks && potentialParentTasks.length > 0 && (
+                                <div>
+                                    <label htmlFor="parentTask" className="label">
+                                        Parent Task
+                                    </label>
+                                    <select
+                                        id="parentTask"
+                                        value={formData.parentTaskId ?? ""}
+                                        onChange={(e) => setFormData({ ...formData, parentTaskId: e.target.value || null })}
+                                        className="select"
+                                    >
+                                        <option value="">No parent task</option>
+                                        {potentialParentTasks
+                                            .filter(parentTask =>
+                                                parentTask.id !== taskId &&
+                                                parentTask.status !== "COMPLETED"
+                                            )
+                                            .map((parentTask) => (
+                                                <option key={parentTask.id} value={parentTask.id}>
+                                                    {parentTask.title}
+                                                </option>
+                                            ))}
+                                    </select>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Select a parent task to create a subtask relationship
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Team Assignment */}
                             {!usersLoading && usersList.length > 0 && (

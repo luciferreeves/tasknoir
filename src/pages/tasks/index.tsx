@@ -41,6 +41,10 @@ interface TaskWithRelations {
     updatedAt: Date;
     project?: TaskProject | null;
     assignments?: TaskAssignment[];
+    parentTask?: {
+        id: string;
+        title: string;
+    } | null;
     _count?: {
         comments: number;
         attachments: number;
@@ -61,8 +65,55 @@ export default function Tasks() {
         assignedToMe: false,
     });
 
+    const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
+
     const { data: tasksData, isLoading } = api.task.getAll.useQuery(filters);
     const tasks = tasksData as TaskWithRelations[] | undefined;
+
+    // Organize tasks into parent-child relationships
+    const organizedTasks = () => {
+        if (!tasks) return [];
+
+        const parentTasks: TaskWithRelations[] = [];
+        const subtasksByParent: Record<string, TaskWithRelations[]> = {};
+
+        // Separate parent tasks and subtasks
+        tasks.forEach(task => {
+            if (task.parentTask) {
+                subtasksByParent[task.parentTask.id] ??= [];
+                subtasksByParent[task.parentTask.id]!.push(task);
+            } else {
+                parentTasks.push(task);
+            }
+        });
+
+        // Create organized list with parent tasks followed by their subtasks
+        const organized: (TaskWithRelations & { isSubtask?: boolean; parentId?: string })[] = [];
+
+        parentTasks.forEach(parentTask => {
+            organized.push(parentTask);
+
+            if (subtasksByParent[parentTask.id] && !collapsedParents.has(parentTask.id)) {
+                subtasksByParent[parentTask.id]!.forEach(subtask => {
+                    organized.push({ ...subtask, isSubtask: true, parentId: parentTask.id });
+                });
+            }
+        });
+
+        return organized;
+    };
+
+    const toggleParentCollapse = (parentId: string) => {
+        setCollapsedParents(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(parentId)) {
+                newSet.delete(parentId);
+            } else {
+                newSet.add(parentId);
+            }
+            return newSet;
+        });
+    };
 
     useEffect(() => {
         if (status === "loading") return;
@@ -98,6 +149,112 @@ export default function Tasks() {
             case "URGENT": return "priority-urgent";
             default: return "priority-medium";
         }
+    };
+
+    const TaskCard = ({ task, isSubtask = false, _parentId }: {
+        task: TaskWithRelations;
+        isSubtask?: boolean;
+        _parentId?: string;
+    }) => {
+        const hasSubtasks = !isSubtask && Boolean(task._count?.subTasks && task._count.subTasks > 0);
+        const isCollapsed = collapsedParents.has(task.id);
+
+        return (
+            <div className={`relative ${isSubtask ? 'ml-8' : ''}`}>
+                {/* Collapse/Expand button for parent tasks - positioned outside the card */}
+                {hasSubtasks && task._count && task._count.subTasks > 0 && (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleParentCollapse(task.id);
+                        }}
+                        className="absolute -left-10 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-background border border-border text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors shadow-sm"
+                        aria-label={isCollapsed ? "Expand subtasks" : "Collapse subtasks"}
+                    >
+                        {isCollapsed ? "+" : "−"}
+                    </button>
+                )}
+
+
+
+                <div className={`card p-6 hover-lift ${isSubtask ? '-mt-2' : 'mb-4'} last:mb-0`}>
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                                <Link href={`/tasks/${task.id}`} className="flex-1">
+                                    <h3 className="text-lg font-semibold text-foreground hover:text-primary transition-colors">
+                                        {task.title}
+                                    </h3>
+                                </Link>
+
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className={getStatusColor(task.status)}>
+                                        {task.status.replace('_', ' ')}
+                                    </span>
+                                    <span className={getPriorityColor(task.priority)}>
+                                        {task.priority}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {task.description && (
+                                <Link href={`/tasks/${task.id}`}>
+                                    <HtmlPreview
+                                        content={task.description}
+                                        className="text-muted-foreground text-sm mb-3 line-clamp-2 hover:text-foreground/80 transition-colors"
+                                        maxLength={150}
+                                        stripHtml={true}
+                                    />
+                                </Link>
+                            )}
+                        </div>
+                    </div>
+
+                    <Link href={`/tasks/${task.id}`}>
+                        <div className="flex justify-between items-center text-sm">
+                            <div className="flex items-center gap-4 text-muted-foreground">
+                                {task.project && (
+                                    <span>📁 {task.project.title}</span>
+                                )}
+                                {task.dueDate && (
+                                    <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
+                                )}
+                                {task._count && (
+                                    <span>💬 {task._count.comments}</span>
+                                )}
+                                {task._count && (
+                                    <span>📎 {task._count.attachments}</span>
+                                )}
+                                {task._count && (
+                                    <span>📝 {task._count.subTasks} subtask{task._count.subTasks !== 1 ? 's' : ''}</span>
+                                )}
+                                {isSubtask && task.parentTask && (
+                                    <span className="text-xs text-muted-foreground">↳ subtask of {task.parentTask.title}</span>
+                                )}
+                            </div>
+
+                            <div className="flex gap-1">
+                                {task.assignments?.slice(0, 3).map((assignment) => (
+                                    <UserAvatar
+                                        key={assignment.id}
+                                        user={assignment.user}
+                                        size="sm"
+                                        clickable={true}
+                                        showName={false}
+                                    />
+                                ))}
+                                {task.assignments && task.assignments.length > 3 && (
+                                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                        +{task.assignments.length - 3}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -211,71 +368,14 @@ export default function Tasks() {
                             </Link>
                         </div>
                     ) : (
-                        <div className="space-y-8">
-                            {tasks?.map((task) => (
-                                <div key={task.id} className="mb-4 last:mb-0">
-                                    <Link href={`/tasks/${task.id}`}>
-                                        <div className="card p-6 hover-lift cursor-pointer">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-3 mb-2">
-                                                        <h3 className="text-lg font-semibold text-foreground">
-                                                            {task.title}
-                                                        </h3>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={getStatusColor(task.status)}>
-                                                                {task.status.replace('_', ' ')}
-                                                            </span>
-                                                            <span className={getPriorityColor(task.priority)}>
-                                                                {task.priority}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {task.description && (
-                                                        <HtmlPreview
-                                                            content={task.description}
-                                                            className="text-muted-foreground text-sm mb-3 line-clamp-2"
-                                                            maxLength={150}
-                                                            stripHtml={true}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-center text-sm">
-                                                <div className="flex items-center gap-4 text-muted-foreground">
-                                                    {task.project && (
-                                                        <span>📁 {task.project.title}</span>
-                                                    )}
-                                                    {task.dueDate && (
-                                                        <span>📅 {new Date(task.dueDate).toLocaleDateString()}</span>
-                                                    )}
-                                                    <span>💬 {task._count?.comments ?? 0}</span>
-                                                    <span>📎 {task._count?.attachments ?? 0}</span>
-                                                    <span>🔗 {task._count?.subTasks ?? 0} subtasks</span>
-                                                </div>
-
-                                                <div className="flex gap-1">
-                                                    {task.assignments?.slice(0, 3).map((assignment) => (
-                                                        <UserAvatar
-                                                            key={assignment.id}
-                                                            user={assignment.user}
-                                                            size="sm"
-                                                            clickable={true}
-                                                            showName={false}
-                                                        />
-                                                    ))}
-                                                    {task.assignments && task.assignments.length > 3 && (
-                                                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                                                            +{task.assignments.length - 3}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                </div>
+                        <div className="space-y-4">
+                            {organizedTasks().map((task) => (
+                                <TaskCard
+                                    key={task.id}
+                                    task={task}
+                                    isSubtask={task.isSubtask}
+                                    _parentId={task.parentId}
+                                />
                             ))}
                         </div>
                     )}

@@ -10,6 +10,7 @@ import UserAvatar from "~/components/UserAvatar";
 import WysiwygEditor from "~/components/WysiwygEditor";
 import TaskComments from "~/components/TaskComments";
 import TaskAttachments from "~/components/TaskAttachments";
+import SubtaskManagement from "~/components/SubtaskManagement";
 
 // Type definitions based on actual Prisma schema
 interface UserType {
@@ -455,29 +456,12 @@ const TaskDetailPage: NextPage = () => {
                             {/* Note: Dependencies not implemented in current schema */}
 
                             {/* Subtasks */}
-                            {task.subTasks && task.subTasks.length > 0 && (
-                                <div className="card">
-                                    <div className="p-6 border-b border-border">
-                                        <h3 className="text-lg font-semibold text-foreground">Subtasks</h3>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="space-y-2">
-                                            {task.subTasks.map((subtask) => (
-                                                <Link
-                                                    key={subtask.id}
-                                                    href={`/tasks/${subtask.id}`}
-                                                    className="block p-2 border border-border rounded hover:bg-muted/50 transition-colors"
-                                                >
-                                                    <p className="font-medium text-foreground">{subtask.title}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Status: {subtask.status.replace('_', ' ')}
-                                                    </p>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            <SubtaskManagement
+                                taskId={task.id}
+                                projectId={task.project?.id ?? ""}
+                                subTasks={task.subTasks ?? []}
+                                onRefresh={() => void taskQuery.refetch()}
+                            />
                         </div>
                     </div>
                 </div>
