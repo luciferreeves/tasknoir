@@ -234,4 +234,75 @@ export const categoriesTagsRouter = createTRPCRouter({
         });
       }
     }),
+
+  // Search tags for autocomplete
+  searchTags: protectedProcedure
+    .input(
+      z.object({
+        query: z.string(),
+        limit: z.number().optional().default(10),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const tags = await ctx.db.taskTag.findMany({
+          where: {
+            name: {
+              contains: input.query,
+              mode: "insensitive",
+            },
+          },
+          orderBy: { name: "asc" },
+          take: input.limit,
+        });
+        return tags;
+      } catch (error) {
+        console.error("Error searching tags:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to search tags",
+        });
+      }
+    }),
+
+  // Create tag or return existing one
+  createOrFindTag: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        color: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // First try to find existing tag
+        const existingTag = await ctx.db.taskTag.findFirst({
+          where: {
+            name: {
+              equals: input.name,
+              mode: "insensitive",
+            },
+          },
+        });
+
+        if (existingTag) {
+          return existingTag;
+        }
+
+        // Create new tag if not found
+        const tag = await ctx.db.taskTag.create({
+          data: {
+            name: input.name,
+            color: input.color,
+          },
+        });
+        return tag;
+      } catch (error) {
+        console.error("Error creating or finding tag:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create or find tag",
+        });
+      }
+    }),
 });

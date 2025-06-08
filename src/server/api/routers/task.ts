@@ -647,6 +647,74 @@ export const taskRouter = createTRPCRouter({
       return { success: true };
     }),
 
+  // Update tags for a task
+  updateTags: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        tagIds: z.array(z.string()),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if user has access to the task
+      const userConditions = [
+        {
+          project: {
+            ownerId: ctx.session.user.id,
+          },
+        },
+        {
+          project: {
+            members: {
+              some: {
+                userId: ctx.session.user.id,
+              },
+            },
+          },
+        },
+        {
+          assignments: {
+            some: {
+              userId: ctx.session.user.id,
+            },
+          },
+        },
+      ];
+
+      const whereCondition = isAdmin(ctx.session)
+        ? { id: input.taskId } // Admins can update tags for any task
+        : { id: input.taskId, OR: userConditions };
+
+      const task = await ctx.db.task.findFirst({
+        where: whereCondition,
+      });
+
+      if (!task) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message:
+            "Task not found or you do not have permission to update tags",
+        });
+      }
+
+      // Remove existing tag relations
+      await ctx.db.taskTagRelation.deleteMany({
+        where: { taskId: input.taskId },
+      });
+
+      // Create new tag relations
+      if (input.tagIds.length > 0) {
+        await ctx.db.taskTagRelation.createMany({
+          data: input.tagIds.map((tagId) => ({
+            taskId: input.taskId,
+            tagId,
+          })),
+        });
+      }
+
+      return { success: true };
+    }),
+
   // Add a comment to a task
   addComment: protectedProcedure
     .input(

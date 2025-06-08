@@ -60,9 +60,13 @@ interface CategoryType {
     name: string;
 }
 
-interface TagType {
+interface TagRelationType {
     id: string;
-    name: string;
+    tag: {
+        id: string;
+        name: string;
+        color?: string | null;
+    };
 }
 
 interface TaskType {
@@ -82,7 +86,7 @@ interface TaskType {
     attachments?: TaskAttachmentType[];
     timeEntries?: TaskTimeEntryType[];
     categories?: CategoryType[];
-    tags?: TagType[];
+    tags?: TagRelationType[];
     subTasks?: TaskType[];
     createdAt: Date;
     updatedAt: Date;
@@ -440,12 +444,13 @@ const TaskDetailPage: NextPage = () => {
                                     </div>
                                     <div className="p-6">
                                         <div className="flex flex-wrap gap-2">
-                                            {task.tags.map((tag) => (
+                                            {task.tags.map((tagRelation) => (
                                                 <span
-                                                    key={tag.id}
+                                                    key={tagRelation.id}
                                                     className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                                                    style={tagRelation.tag.color ? { backgroundColor: `${tagRelation.tag.color}20`, color: tagRelation.tag.color } : {}}
                                                 >
-                                                    {tag.name}
+                                                    {tagRelation.tag.name}
                                                 </span>
                                             ))}
                                         </div>
