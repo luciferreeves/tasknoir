@@ -63,7 +63,7 @@ export default function UserProfile() {
             </Head>
             <div className="min-h-screen bg-background">
                 <Navbar />
-                <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="space-y-8">
                         {/* Header */}
                         <div className="flex items-center justify-between">
