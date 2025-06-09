@@ -1,6 +1,6 @@
 # 🌟 Task Noir
 
-[![Deploy Status](https://github.com/luciferreeves/task-noir/actions/workflows/deploy.yml/badge.svg)](https://github.com/luciferreeves/task-noir/actions/workflows/deploy.yml)
+[![🚀 Deploy Task Noir to AWS](https://github.com/luciferreeves/tasknoir/actions/workflows/deploy.yml/badge.svg)](https://github.com/luciferreeves/tasknoir/actions/workflows/deploy.yml)
 
 A modern task management application built with the T3 Stack.
 
