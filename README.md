@@ -1,37 +1,79 @@
 # 🌟 Task Noir
 
-[![🚀 Deploy Task Noir to AWS](https://github.com/[YOUR_USERNAME]/task-noir/actions/workflows/deploy.yml/badge.svg)](https://github.com/[YOUR_USERNAME]/task-noir/actions/workflows/deploy.yml)
-[![✅ Status Checks](https://github.com/[YOUR_USERNAME]/task-noir/actions/workflows/checks.yml/badge.svg)](https://github.com/[YOUR_USERNAME]/task-noir/actions/workflows/checks.yml)
-[![🎭 Preview Deployment](https://github.com/[YOUR_USERNAME]/task-noir/actions/workflows/preview.yml/badge.svg)](https://github.com/[YOUR_USERNAME]/task-noir/actions/workflows/preview.yml)
+[![Deploy Status](https://github.com/luciferreeves/task-noir/actions/workflows/deploy.yml/badge.svg)](https://github.com/luciferreeves/task-noir/actions/workflows/deploy.yml)
 
-A modern, full-stack task management application built with the [T3 Stack](https://create.t3.gg/) and deployed to AWS.
+A modern task management application built with the T3 Stack.
 
 ## ✨ Features
 
-- 🔐 **Secure Authentication** - NextAuth.js with custom credentials
-- 🗄️ **Database** - PostgreSQL with Prisma ORM
-- 🎨 **Modern UI** - Tailwind CSS for beautiful styling
-- 🚀 **Auto-Deployment** - GitHub Actions + AWS SST
-- 📱 **Responsive Design** - Works on all devices
-- 🔒 **Type Safety** - Full TypeScript coverage
+### 🏠 Dashboard
+- Task statistics overview with status and priority breakdowns
+- Recent activity feed showing task updates and changes
+- Project overview with progress tracking
+- Upcoming deadlines and overdue task alerts
+- Quick actions for creating tasks and projects
 
-## 🏗️ Tech Stack
+### 📋 Task Management
+- Create, read, update, and delete tasks
+- Priority levels: LOW, MEDIUM, HIGH, URGENT
+- Status workflow: TODO, IN_PROGRESS, REVIEW, COMPLETED
+- Multi-user task assignments
+- Due date management with deadline tracking
+- Task comments system
+- File attachments support
+- Subtask management
+- Advanced filtering by status, priority, assignments, due dates, and subtasks
 
-## 🏗️ Tech Stack
+### 🏗️ Project Management
+- Create and manage projects
+- Add team members to projects
+- Project ownership and access control
+- Task organization within projects
 
-- ⚡ [Next.js](https://nextjs.org) - React framework for production
-- 🔐 [NextAuth.js](https://next-auth.js.org) - Authentication for Next.js
-- 🗄️ [Prisma](https://prisma.io) - Type-safe database ORM
-- 🎨 [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS framework
-- 🔗 [tRPC](https://trpc.io) - End-to-end typesafe APIs
-- ☁️ [AWS SST](https://sst.dev) - Full-stack serverless framework
-- 🚀 [GitHub Actions](https://github.com/features/actions) - CI/CD automation
+### 👥 User Management
+- User authentication with NextAuth.js
+- User profiles with bio and image support
+- Role-based access: USER and ADMIN roles
+- Admin panel for user management
+
+### 🎨 UI/UX
+- Dark/Light mode support
+- Responsive design
+- Modern Tailwind CSS styling
+- User avatars with fallback to initials
+- Rich text editor for task descriptions
+- File upload and preview capabilities
+
+## 🏗️ Technology Stack
+
+### T3 Stack Core
+- **[Next.js 15](https://nextjs.org)** - React framework
+- **[TypeScript](https://typescriptlang.org)** - Type safety
+- **[tRPC](https://trpc.io)** - End-to-end typesafe APIs
+- **[Prisma](https://prisma.io)** - Database ORM
+- **[NextAuth.js](https://next-auth.js.org)** - Authentication
+- **[Tailwind CSS](https://tailwindcss.com)** - Styling
+
+### Additional Technologies
+- **[Supabase](https://supabase.com)** - Database and file storage
+- **[SST](https://sst.dev)** - AWS deployment platform
+- **[React Query](https://tanstack.com/query)** - Data fetching and caching
+- **[TipTap](https://tiptap.dev)** - Rich text editor
+- **[bcryptjs](https://github.com/dcodeIO/bcrypt.js)** - Password hashing
+- **[Lucide React](https://lucide.dev)** - Icon library
+- **[next-themes](https://github.com/pacocoursey/next-themes)** - Theme switching
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Node.js 18+
+- A Supabase project
+
+### Installation
+
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/[YOUR_USERNAME]/task-noir.git
+   git clone <repository-url>
    cd task-noir
    ```
 
@@ -43,100 +85,119 @@ A modern, full-stack task management application built with the [T3 Stack](https
 3. **Set up environment variables**
    ```bash
    cp .env.example .env
-   # Edit .env with your values
+   ```
+   
+   Edit `.env` with your configuration:
+   ```bash
+   # Next Auth
+   AUTH_SECRET="your-auth-secret"
+   
+   # Database
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/task-noir"
+   NEXTAUTH_URL="http://localhost:3000"
+   
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL="your-supabase-url"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+   SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-role-key"
    ```
 
 4. **Set up the database**
    ```bash
-   npx prisma migrate dev
+   # Generate Prisma client
    npx prisma generate
+   
+   # Run database migrations
+   npx prisma migrate dev
+   
+   # (Optional) View your database
+   npx prisma studio
    ```
 
-5. **Start development server**
+5. **Start the development server**
    ```bash
    npm run dev
    ```
 
-## 🔧 Environment Setup
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-Create a `.env` file with these variables:
+## 📁 Project Structure
 
-```bash
-# Database
-DATABASE_URL="postgresql://..."
-
-# NextAuth
-AUTH_SECRET="your-secret-here"
-NEXTAUTH_URL="http://localhost:3000"
 ```
+task-noir/
+├── prisma/                        # Database schema and migrations
+├── public/                        # Static assets
+├── src/
+│   ├── components/                # React components
+│   │   ├── FileUpload.tsx
+│   │   ├── HtmlPreview.tsx
+│   │   ├── Loading.tsx
+│   │   ├── MarkdownPreview.tsx
+│   │   ├── Navbar.tsx
+│   │   ├── SubtaskManagement.tsx
+│   │   ├── TagInput.tsx
+│   │   ├── TaskAttachments.tsx
+│   │   ├── TaskComments.tsx
+│   │   ├── ThemeProvider.tsx
+│   │   ├── ThemeToggle.tsx
+│   │   ├── UserAvatar.tsx
+│   │   └── WysiwygEditor.tsx
+│   ├── env.js                     # Environment validation
+│   ├── lib/
+│   │   └── supabase.ts           # Supabase client
+│   ├── pages/                     # Next.js pages
+│   │   ├── admin/                # Admin pages
+│   │   ├── api/                  # API routes
+│   │   ├── auth/                 # Authentication pages
+│   │   ├── profile/              # Profile pages
+│   │   ├── projects/             # Project pages
+│   │   ├── tasks/                # Task pages
+│   │   ├── _app.tsx
+│   │   ├── dashboard.tsx
+│   │   ├── index.tsx
+│   │   └── profile.tsx
+│   ├── server/                    # Server-side code
+│   │   ├── api/                  # tRPC routers
+│   │   ├── auth/                 # Auth configuration
+│   │   └── db.ts                 # Database connection
+│   ├── styles/
+│   │   └── globals.css           # Global styles
+│   └── utils/
+│       └── api.ts                # tRPC client setup
+├── sst.config.ts                  # SST deployment config
+└── package.json                   # Dependencies and scripts
+```
+
+## 🔧 Available Scripts
+
+- `npm run dev` - Start development server with Turbo
+- `npm run build` - Build the application
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint errors
+- `npm run format:check` - Check code formatting
+- `npm run format:write` - Format code with Prettier
+- `npm run typecheck` - Run TypeScript type checking
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:migrate` - Run Prisma migrations
+- `npm run db:push` - Push schema changes to database
+- `npm run db:studio` - Open Prisma Studio
+- `npm run sst:dev` - Start SST development
+- `npm run sst:deploy` - Deploy with SST
+- `npm run sst:deploy:prod` - Deploy to production
+- `npm run sst:remove` - Remove SST deployment
 
 ## 🚀 Deployment
 
-This project automatically deploys to AWS using GitHub Actions:
+This project uses [SST](https://sst.dev) for deployment to AWS.
 
-1. **Set up GitHub Secrets** (see [DEPLOYMENT.md](.github/DEPLOYMENT.md))
-2. **Push to main branch** - Triggers automatic deployment
-3. **Create a release tag** - Triggers production release
-
-### 🎭 Preview Deployments
-
-Pull requests automatically get preview deployments:
-- Each PR gets its own staging environment
-- Preview URLs are posted as PR comments
-- Automatically cleaned up when PR is closed
-
-## 📋 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Run ESLint
-- `npm run db:push` - Push schema changes to database
-- `npm run db:studio` - Open Prisma Studio
-
-## 🎯 Project Structure
-
-```
-src/
-├── pages/           # Next.js pages and API routes
-├── server/          # Server-side code (tRPC, auth, db)
-├── styles/          # Global styles
-└── utils/           # Utility functions
-
-prisma/
-├── schema.prisma    # Database schema
-└── migrations/      # Database migrations
-
-.github/
-└── workflows/       # GitHub Actions workflows
+### Development
+```bash
+npm run sst:dev
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🎉 Acknowledgments
-
-- Built with the amazing [T3 Stack](https://create.t3.gg/)
-- Deployed on [AWS](https://aws.amazon.com/) with [SST](https://sst.dev/)
-- CI/CD powered by [GitHub Actions](https://github.com/features/actions)
-
----
-
-**Happy coding!** 🚀✨
-
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
-
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+### Production Deployment
+```bash
+npm run sst:deploy:prod
+```
