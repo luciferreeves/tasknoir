@@ -1,20 +1,15 @@
 import "@testing-library/jest-dom";
 import { jest } from "@jest/globals";
 
-// Mock environment variables first to prevent real database connections
 Object.assign(process.env, {
   NODE_ENV: "test",
   NEXTAUTH_SECRET: "test-secret",
   NEXTAUTH_URL: "http://localhost:3000",
-  DATABASE_URL: "file:./test.db", // Use SQLite for tests
-  AUTH_SECRET: "test-secret",
 });
 
-// Mock the env module before any imports
 jest.mock("~/env", () => ({
   env: {
     NODE_ENV: "test",
-    DATABASE_URL: "file:./test.db",
     NEXTAUTH_SECRET: "test-secret",
     NEXTAUTH_URL: "http://localhost:3000",
   },
@@ -62,14 +57,6 @@ jest.mock("next-auth/react", () => ({
   signOut: jest.fn(),
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
-
-// Mock environment variables
-Object.assign(process.env, {
-  NODE_ENV: "test",
-  NEXTAUTH_SECRET: "test-secret",
-  NEXTAUTH_URL: "http://localhost:3000",
-  DATABASE_URL: "file:./test.db",
-});
 
 // Global test timeout
 jest.setTimeout(30000);
