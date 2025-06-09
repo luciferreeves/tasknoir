@@ -35,6 +35,8 @@ export default function AdminUsers() {
         role: "USER" as "USER" | "ADMIN",
         emailVerified: false,
     });
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<UserWithCounts | null>(null);
 
     // Get all users (admin only)
     const { data: users, isLoading, refetch } = api.user.getAll.useQuery();
@@ -50,6 +52,17 @@ export default function AdminUsers() {
         },
         onError: (error) => {
             alert(error.message || "Failed to update user");
+        },
+    });
+
+    // Delete user mutation
+    const deleteUserMutation = api.user.deleteUser.useMutation({
+        onSuccess: (data) => {
+            void refetch();
+            alert(`User ${data.email} has been successfully deleted.`);
+        },
+        onError: (error) => {
+            alert(`Error deleting user: ${error.message}`);
         },
     });
 
@@ -98,6 +111,29 @@ export default function AdminUsers() {
             role: "USER",
             emailVerified: false,
         });
+    };
+
+    const handleDeleteUser = (user: UserWithCounts) => {
+        if (user.id === session?.user.id) {
+            alert("You cannot delete your own account from this panel. Use the profile settings instead.");
+            return;
+        }
+
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteUser = () => {
+        if (!userToDelete) return;
+
+        deleteUserMutation.mutate({ id: userToDelete.id });
+        setShowDeleteModal(false);
+        setUserToDelete(null);
+    };
+
+    const cancelDeleteModal = () => {
+        setShowDeleteModal(false);
+        setUserToDelete(null);
     };
 
     return (
@@ -271,12 +307,23 @@ export default function AdminUsers() {
                                                             </button>
                                                         </div>
                                                     ) : (
-                                                        <button
-                                                            onClick={() => handleEditUser(user)}
-                                                            className="btn btn-ghost btn-sm"
-                                                        >
-                                                            Edit
-                                                        </button>
+                                                        <div className="space-x-2">
+                                                            <button
+                                                                onClick={() => handleEditUser(user)}
+                                                                className="btn btn-ghost btn-sm"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            {user.id !== session?.user.id && (
+                                                                <button
+                                                                    onClick={() => handleDeleteUser(user)}
+                                                                    disabled={deleteUserMutation.isPending}
+                                                                    className="btn btn-destructive btn-sm"
+                                                                >
+                                                                    {deleteUserMutation.isPending ? "Deleting..." : "Delete"}
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>
@@ -302,6 +349,51 @@ export default function AdminUsers() {
                         )}
                     </div>
                 </main>
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteModal && userToDelete && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                            <div className="text-center">
+                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                                    <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-medium text-foreground mb-2">
+                                    ⚠️ Delete User Account
+                                </h3>
+                                <div className="text-sm text-muted-foreground mb-4 text-left">
+                                    <p className="mb-3">You are about to permanently delete <strong>{userToDelete.name}</strong> ({userToDelete.email}).</p>
+                                    <p className="mb-3">This action will:</p>
+                                    <ul className="space-y-1 text-xs">
+                                        <li>• Transfer {userToDelete._count.ownedProjects} owned projects to you</li>
+                                        <li>• Transfer {userToDelete._count.ownedTasks} owned tasks to you</li>
+                                        <li>• Remove them from {userToDelete._count.projectMembers} project memberships</li>
+                                        <li>• Remove them from {userToDelete._count.assignedTasks} task assignments</li>
+                                        <li>• Delete all their comments and activity history</li>
+                                    </ul>
+                                    <p className="mt-3 font-medium text-red-600 dark:text-red-400">This action cannot be undone!</p>
+                                </div>
+                            </div>
+                            <div className="flex space-x-3 justify-end">
+                                <button
+                                    onClick={cancelDeleteModal}
+                                    className="btn btn-outline btn-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDeleteUser}
+                                    className="btn btn-destructive btn-sm"
+                                    disabled={deleteUserMutation.isPending}
+                                >
+                                    {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

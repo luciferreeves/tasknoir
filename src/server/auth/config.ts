@@ -175,15 +175,40 @@ export const authOptions: NextAuthOptions = {
             token.role = dbUser.role;
             token.image = dbUser.image;
             token.bio = dbUser.bio;
+          } else {
+            // User no longer exists in database (deleted by admin)
+            // Clear user data from token to force logout
+            console.log(
+              "User not found in database, clearing token data:",
+              token.id,
+            );
+            token.id = undefined;
+            token.name = undefined;
+            token.email = undefined;
+            token.role = undefined;
+            token.image = undefined;
+            token.bio = undefined;
           }
         } catch (error) {
           console.error("Error fetching user data in JWT callback:", error);
+          // On database error, also clear the token data to be safe
+          token.id = undefined;
+          token.name = undefined;
+          token.email = undefined;
+          token.role = undefined;
+          token.image = undefined;
+          token.bio = undefined;
         }
       }
 
       return token;
     },
     session: ({ session, token }) => {
+      // If token has no user id (user was deleted), return session without user data
+      if (!token?.id) {
+        return { ...session, user: undefined };
+      }
+
       if (session.user && token.id) {
         session.user.id = token.id;
         session.user.role = token.role ?? "USER";

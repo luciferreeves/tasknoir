@@ -13,7 +13,8 @@ export default function Navbar() {
         void router.push("/auth/signin");
     };
 
-    if (!session) {
+    // Don't render if no session or user data is incomplete
+    if (!session?.user?.id) {
         return null;
     }
 

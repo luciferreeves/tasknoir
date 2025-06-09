@@ -7,6 +7,7 @@
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
+import { signOut } from "next-auth/react";
 import superjson from "superjson";
 
 import { type AppRouter } from "~/server/api/root";
@@ -42,6 +43,45 @@ export const api = createTRPCNext<AppRouter>({
           url: `${getBaseUrl()}/api/trpc`,
         }),
       ],
+      /**
+       * React Query configuration
+       *
+       * @see https://trpc.io/docs/react-query-config
+       */
+      queryClientConfig: {
+        defaultOptions: {
+          queries: {
+            retry: (failureCount, error: unknown) => {
+              // Don't retry on UNAUTHORIZED errors - user should be logged out
+              const tRPCError = error as { data?: { code?: string } };
+              if (tRPCError?.data?.code === "UNAUTHORIZED") {
+                // Force sign out on client side when user account no longer exists
+                if (typeof window !== "undefined") {
+                  void signOut({ redirect: true, callbackUrl: "/auth/signin" });
+                }
+                return false;
+              }
+              // Retry other errors up to 3 times
+              return failureCount < 3;
+            },
+            retryDelay: (attemptIndex) =>
+              Math.min(1000 * 2 ** attemptIndex, 30000),
+          },
+          mutations: {
+            retry: (failureCount, error: unknown) => {
+              // Don't retry on UNAUTHORIZED errors
+              const tRPCError = error as { data?: { code?: string } };
+              if (tRPCError?.data?.code === "UNAUTHORIZED") {
+                if (typeof window !== "undefined") {
+                  void signOut({ redirect: true, callbackUrl: "/auth/signin" });
+                }
+                return false;
+              }
+              return false; // Don't retry mutations by default
+            },
+          },
+        },
+      },
     };
   },
   /**

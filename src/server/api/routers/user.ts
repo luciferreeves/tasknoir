@@ -441,4 +441,278 @@ export const userRouter = createTRPCRouter({
 
       return users;
     }),
+
+  // Admin: Delete any user (admin only)
+  deleteUser: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Only admins can delete other users
+      if (!isAdmin(ctx.session)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins can delete users",
+        });
+      }
+
+      // Prevent admin from deleting themselves
+      if (input.id === ctx.session.user.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot delete your own account using this endpoint",
+        });
+      }
+
+      // Check if user exists
+      const userToDelete = await ctx.db.user.findUnique({
+        where: { id: input.id },
+        select: {
+          id: true,
+          email: true,
+          image: true,
+          _count: {
+            select: {
+              ownedProjects: true,
+              assignedTasks: true,
+              ownedTasks: true,
+            },
+          },
+        },
+      });
+
+      if (!userToDelete) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      try {
+        // Use a transaction to ensure data consistency
+        await ctx.db.$transaction(async (tx) => {
+          // Transfer ownership of projects to the admin who is deleting the user
+          if (userToDelete._count.ownedProjects > 0) {
+            await tx.project.updateMany({
+              where: { ownerId: input.id },
+              data: { ownerId: ctx.session.user.id },
+            });
+          }
+
+          // Remove user from project memberships
+          await tx.projectMember.deleteMany({
+            where: { userId: input.id },
+          });
+
+          // Remove user from task assignments
+          await tx.taskAssignment.deleteMany({
+            where: { userId: input.id },
+          });
+
+          // Delete user's time entries
+          await tx.taskTimeEntry.deleteMany({
+            where: { userId: input.id },
+          });
+
+          // Delete user's task activities
+          await tx.taskActivity.deleteMany({
+            where: { userId: input.id },
+          });
+
+          // Delete user's task comments
+          await tx.taskComment.deleteMany({
+            where: { userId: input.id },
+          });
+
+          // Transfer ownership of tasks to the admin
+          if (userToDelete._count.ownedTasks > 0) {
+            await tx.task.updateMany({
+              where: { userId: input.id },
+              data: { userId: ctx.session.user.id },
+            });
+          }
+
+          // Finally, delete the user
+          await tx.user.delete({
+            where: { id: input.id },
+          });
+        });
+
+        // Delete user's profile image from storage if it exists
+        if (userToDelete.image) {
+          void deleteImageFromStorage(userToDelete.image);
+        }
+
+        return { success: true, email: userToDelete.email };
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to delete user",
+        });
+      }
+    }),
+
+  // Delete current user's account
+  deleteMyAccount: protectedProcedure
+    .input(
+      z.object({
+        confirmEmail: z.string().email("Please enter a valid email address"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify that the confirmation email matches the user's email
+      if (input.confirmEmail !== ctx.session.user.email) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Confirmation email does not match your account email",
+        });
+      }
+
+      const userId = ctx.session.user.id;
+
+      // Get user data before deletion
+      const userToDelete = await ctx.db.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          image: true,
+          _count: {
+            select: {
+              ownedProjects: true,
+            },
+          },
+        },
+      });
+
+      if (!userToDelete) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      try {
+        // Use a transaction to ensure data consistency
+        await ctx.db.$transaction(async (tx) => {
+          // For owned projects, we need to handle them differently
+          // Option 1: Delete projects with no other members, transfer ownership for projects with members
+          const ownedProjects = await tx.project.findMany({
+            where: { ownerId: userId },
+            include: {
+              members: true,
+            },
+          });
+
+          for (const project of ownedProjects) {
+            if (project.members.length === 0) {
+              // No other members, delete the project and all its tasks
+              await tx.task.deleteMany({
+                where: { projectId: project.id },
+              });
+              await tx.project.delete({
+                where: { id: project.id },
+              });
+            } else {
+              // Transfer ownership to the first member
+              const newOwnerId = project.members[0]?.userId;
+              if (newOwnerId) {
+                await tx.project.update({
+                  where: { id: project.id },
+                  data: { ownerId: newOwnerId },
+                });
+                // Remove the new owner from members (since they're now the owner)
+                await tx.projectMember.delete({
+                  where: {
+                    projectId_userId: {
+                      projectId: project.id,
+                      userId: newOwnerId,
+                    },
+                  },
+                });
+              }
+            }
+          }
+
+          // Remove user from project memberships
+          await tx.projectMember.deleteMany({
+            where: { userId },
+          });
+
+          // Remove user from task assignments
+          await tx.taskAssignment.deleteMany({
+            where: { userId },
+          });
+
+          // Delete user's time entries
+          await tx.taskTimeEntry.deleteMany({
+            where: { userId },
+          });
+
+          // Delete user's task activities
+          await tx.taskActivity.deleteMany({
+            where: { userId },
+          });
+
+          // Delete user's task comments
+          await tx.taskComment.deleteMany({
+            where: { userId },
+          });
+
+          // Delete tasks created by the user (orphaned tasks)
+          await tx.task.deleteMany({
+            where: {
+              userId: userId,
+              projectId: null, // Only delete tasks not associated with projects
+            },
+          });
+
+          // For tasks in projects, transfer ownership to project owner
+          const tasksInProjects = await tx.task.findMany({
+            where: {
+              userId: userId,
+              projectId: { not: null },
+            },
+            select: {
+              id: true,
+              projectId: true,
+            },
+          });
+
+          for (const task of tasksInProjects) {
+            if (task.projectId) {
+              // Get the project owner
+              const project = await tx.project.findUnique({
+                where: { id: task.projectId },
+                select: { ownerId: true },
+              });
+
+              if (project) {
+                await tx.task.update({
+                  where: { id: task.id },
+                  data: { userId: project.ownerId },
+                });
+              }
+            }
+          }
+
+          // Finally, delete the user
+          await tx.user.delete({
+            where: { id: userId },
+          });
+        });
+
+        // Delete user's profile image from storage if it exists
+        if (userToDelete.image) {
+          void deleteImageFromStorage(userToDelete.image);
+        }
+
+        return { success: true, email: userToDelete.email };
+      } catch (error) {
+        console.error("Error deleting user account:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to delete account",
+        });
+      }
+    }),
 });

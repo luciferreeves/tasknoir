@@ -13,6 +13,9 @@ export default function Profile() {
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Get profile data
@@ -26,6 +29,17 @@ export default function Profile() {
         },
         onError: (error) => {
             alert(error.message || "Failed to update profile");
+        },
+    });
+
+    // Delete account mutation
+    const deleteAccountMutation = api.user.deleteMyAccount.useMutation({
+        onSuccess: () => {
+            alert("Your account has been successfully deleted. You will be signed out.");
+            void router.push("/auth/signin");
+        },
+        onError: (error) => {
+            alert(`Error deleting account: ${error.message}`);
         },
     });
 
@@ -100,6 +114,30 @@ export default function Profile() {
     };
 
     const isAdmin = session.user.role === "ADMIN";
+
+    const handleDeleteAccount = () => {
+        if (deleteConfirmEmail !== profile?.email) {
+            alert("Please enter your email address to confirm account deletion.");
+            return;
+        }
+
+        // Show the confirmation modal instead of using browser alert
+        setShowDeleteModal(true);
+    };
+
+    const confirmDeleteAccount = () => {
+        deleteAccountMutation.mutate({ confirmEmail: deleteConfirmEmail });
+        setShowDeleteModal(false);
+    };
+
+    const cancelDeleteModal = () => {
+        setShowDeleteModal(false);
+    };
+
+    const cancelDeleteAccount = () => {
+        setShowDeleteConfirm(false);
+        setDeleteConfirmEmail("");
+    };
 
     return (
         <>
@@ -310,11 +348,113 @@ export default function Profile() {
                                             )}
                                         </div>
                                     )}
+
+                                    {/* Danger Zone - Delete Account */}
+                                    {!isEditing && (
+                                        <div className="border-t border-red-200 dark:border-red-800 pt-6 mt-8">
+                                            <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">Danger Zone</h3>
+
+                                            {!showDeleteConfirm ? (
+                                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                                                    <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+                                                        Delete Account
+                                                    </h4>
+                                                    <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                                                        Permanently delete your account and all associated data. This action cannot be undone.
+                                                    </p>
+                                                    <button
+                                                        onClick={() => setShowDeleteConfirm(true)}
+                                                        className="btn btn-destructive btn-sm"
+                                                    >
+                                                        Delete My Account
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                                                    <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-4">
+                                                        ⚠️ Confirm Account Deletion
+                                                    </h4>
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <p className="text-sm text-red-600 dark:text-red-400 mb-2">
+                                                                Type your email address to confirm: <strong>{profile?.email}</strong>
+                                                            </p>
+                                                            <input
+                                                                type="email"
+                                                                value={deleteConfirmEmail}
+                                                                onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+                                                                placeholder="Enter your email address"
+                                                                className="input w-full"
+                                                            />
+                                                        </div>
+                                                        <div className="flex space-x-3">
+                                                            <button
+                                                                onClick={handleDeleteAccount}
+                                                                disabled={deleteAccountMutation.isPending || deleteConfirmEmail !== profile?.email}
+                                                                className="btn btn-destructive btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                {deleteAccountMutation.isPending ? "Deleting..." : "Delete My Account Forever"}
+                                                            </button>
+                                                            <button
+                                                                onClick={cancelDeleteAccount}
+                                                                className="btn btn-ghost btn-sm"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </main>
+
+                {/* Delete Confirmation Modal */}
+                {showDeleteModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                            <div className="text-center">
+                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                                    <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-medium text-foreground mb-2">
+                                    ⚠️ Final Confirmation Required
+                                </h3>
+                                <div className="text-sm text-muted-foreground mb-4 text-left">
+                                    <p className="mb-3">You are about to permanently delete your account and all associated data:</p>
+                                    <ul className="space-y-1 text-xs">
+                                        <li>• {profile?._count.ownedProjects ?? 0} owned projects will be transferred to other members or deleted</li>
+                                        <li>• {profile?._count.ownedTasks ?? 0} created tasks will be transferred or deleted</li>
+                                        <li>• You will be removed from {profile?._count.projectMembers ?? 0} project memberships</li>
+                                        <li>• You will be unassigned from {profile?._count.assignedTasks ?? 0} tasks</li>
+                                        <li>• All your comments and activity history will be deleted</li>
+                                    </ul>
+                                    <p className="mt-3 font-medium text-red-600 dark:text-red-400">This action cannot be undone!</p>
+                                </div>
+                            </div>
+                            <div className="flex space-x-3 justify-end">
+                                <button
+                                    onClick={cancelDeleteModal}
+                                    className="btn btn-outline btn-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDeleteAccount}
+                                    className="btn btn-destructive btn-sm"
+                                >
+                                    Delete Forever
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

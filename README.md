@@ -122,53 +122,6 @@ A modern task management application built with the T3 Stack.
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 📁 Project Structure
-
-```
-task-noir/
-├── prisma/                        # Database schema and migrations
-├── public/                        # Static assets
-├── src/
-│   ├── components/                # React components
-│   │   ├── FileUpload.tsx
-│   │   ├── HtmlPreview.tsx
-│   │   ├── Loading.tsx
-│   │   ├── MarkdownPreview.tsx
-│   │   ├── Navbar.tsx
-│   │   ├── SubtaskManagement.tsx
-│   │   ├── TagInput.tsx
-│   │   ├── TaskAttachments.tsx
-│   │   ├── TaskComments.tsx
-│   │   ├── ThemeProvider.tsx
-│   │   ├── ThemeToggle.tsx
-│   │   ├── UserAvatar.tsx
-│   │   └── WysiwygEditor.tsx
-│   ├── env.js                     # Environment validation
-│   ├── lib/
-│   │   └── supabase.ts           # Supabase client
-│   ├── pages/                     # Next.js pages
-│   │   ├── admin/                # Admin pages
-│   │   ├── api/                  # API routes
-│   │   ├── auth/                 # Authentication pages
-│   │   ├── profile/              # Profile pages
-│   │   ├── projects/             # Project pages
-│   │   ├── tasks/                # Task pages
-│   │   ├── _app.tsx
-│   │   ├── dashboard.tsx
-│   │   ├── index.tsx
-│   │   └── profile.tsx
-│   ├── server/                    # Server-side code
-│   │   ├── api/                  # tRPC routers
-│   │   ├── auth/                 # Auth configuration
-│   │   └── db.ts                 # Database connection
-│   ├── styles/
-│   │   └── globals.css           # Global styles
-│   └── utils/
-│       └── api.ts                # tRPC client setup
-├── sst.config.ts                  # SST deployment config
-└── package.json                   # Dependencies and scripts
-```
-
 ## 🔧 Available Scripts
 
 - `npm run dev` - Start development server with Turbo

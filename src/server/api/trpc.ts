@@ -147,10 +147,25 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
-  .use(({ ctx, next }) => {
+  .use(async ({ ctx, next }) => {
     if (!ctx.session?.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
+
+    // Additional check: verify user still exists in database
+    // This prevents deleted users from making API calls before their session expires
+    const userExists = await ctx.db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "User account no longer exists",
+      });
+    }
+
     return next({
       ctx: {
         // infers the `session` as non-nullable
