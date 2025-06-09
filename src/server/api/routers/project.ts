@@ -392,12 +392,10 @@ export const projectRouter = createTRPCRouter({
         }
 
         // Check if user is already a member
-        const existingMember = await ctx.db.projectMember.findUnique({
+        const existingMember = await ctx.db.projectMember.findFirst({
           where: {
-            projectId_userId: {
-              projectId: input.projectId,
-              userId: userToAdd.id,
-            },
+            projectId: input.projectId,
+            userId: userToAdd.id,
           },
         });
 
